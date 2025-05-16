@@ -1,0 +1,3 @@
+rootProject.name = 'runtime-deadcode-detector'
+
+include ':tracker-bootstrap','runtime-deadcode-detector'

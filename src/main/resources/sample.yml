@@ -1,0 +1,10 @@
+deadcode:
+  static-scan: true
+  repo: https://bitbucket.org/yourorg/yourrepo.git
+  branch: develop
+  base-packages:
+    - com.myorg.service
+  track-execution-time: true
+  track-invocation-count: true
+  analyzer-base-url: http://localhost:9090
+  dump-interval-time: 10

@@ -1,0 +1,106 @@
+// File: agent/build.gradle
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.runtime'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+   // implementation project(':tracker-bootstrap')
+    implementation 'net.bytebuddy:byte-buddy:1.14.12'
+    implementation 'net.bytebuddy:byte-buddy-agent:1.14.12'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.yaml:snakeyaml:2.2'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// 👇 Configuration to ensure bootstrap jar is copied locally first
+def trackerBootstrapJarName = "tracker-bootstrap-0.1.0.jar"
+def trackerBootstrapBuildPath = "${rootProject.projectDir}/tracker-bootstrap/build/libs/${trackerBootstrapJarName}"
+def localLibDir = file("$buildDir/libs")
+def localTrackerCopy = localLibDir.toPath().resolve(trackerBootstrapJarName).toFile()
+
+tasks.register('copyTrackerBootstrapJar', Copy) {
+    dependsOn ":tracker-bootstrap:build"
+    from(trackerBootstrapBuildPath)
+    into(localLibDir)
+    rename { trackerBootstrapJarName }
+}
+
+shadowJar {
+  //  dependsOn tasks.named("copyTrackerBootstrapJar")
+    archiveClassifier.set("")
+    mergeServiceFiles()
+    manifest {
+        attributes(
+                'Premain-Class': 'com.runtime.deadcode.DeadCodeAgent',
+                'Agent-Class': 'com.runtime.deadcode.DeadCodeAgent',
+                'Can-Redefine-Classes': 'true',
+                'Can-Retransform-Classes': 'true'
+        )
+    }
+
+  /*  doLast {
+        def libDir = file("$buildDir/tmp/shadowJar/lib")
+        libDir.mkdirs()
+
+        // ✅ Safely access the runtimeClasspath from the project context
+        def byteBuddyJar = project.configurations.runtimeClasspath.find {
+            it.name.contains("byte-buddy") && it.name.endsWith(".jar")
+        }
+
+        if (byteBuddyJar == null) {
+            throw new GradleException("ByteBuddy jar not found in runtimeClasspath")
+        }
+
+        copy {
+            from localTrackerCopy
+            into libDir
+        }
+
+        copy {
+            from byteBuddyJar
+            into libDir
+            rename { "byte-buddy-1.14.12.jar" }
+        }
+
+        ant.jar(destfile: archiveFile.get().asFile, update: true) {
+            zipfileset(dir: libDir.toString(), prefix: "lib") {
+                include(name: "tracker-bootstrap-0.1.0.jar")
+                include(name: "byte-buddy-1.14.12.jar")
+            }
+        }*/
+
+}
+
+
+
+tasks.register('prepareAgentDist', Copy) {
+    dependsOn shadowJar
+    from(shadowJar.archiveFile) {
+        rename { "runtime-deadcode-detector-${project.version}.jar" }
+    }
+    into("$buildDir/agent-dist")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('agentDistZip', Zip) {
+    dependsOn tasks.named("prepareAgentDist")
+    from("$buildDir/agent-dist")
+    archiveFileName.set("runtime-deadcode-agent.zip")
+    destinationDirectory.set(file("$buildDir/distributions"))
+}
+
+tasks.named('build') {
+    finalizedBy(tasks.named("prepareAgentDist"))
+}
