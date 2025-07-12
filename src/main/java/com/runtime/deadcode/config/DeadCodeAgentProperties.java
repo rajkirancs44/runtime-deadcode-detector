@@ -11,6 +11,8 @@ public class DeadCodeAgentProperties {
     private boolean trackInvocationCount;
     private String analyzerBaseUrl = "http://localhost:8081";
     private int dumpIntervalSeconds = 10; // default
+    private int statsDumpInterval=120;
+    private boolean statsRequired;
 
     public boolean isStaticScan() {
         return staticScan;
@@ -74,5 +76,21 @@ public class DeadCodeAgentProperties {
 
     public void setDumpIntervalSeconds(int dumpIntervalSeconds) {
         this.dumpIntervalSeconds = dumpIntervalSeconds;
+    }
+
+    public int getStatsDumpInterval() {
+        return statsDumpInterval;
+    }
+
+    public void setStatsDumpInterval(int statsDumpInterval) {
+        this.statsDumpInterval = statsDumpInterval;
+    }
+
+    public boolean isStatsRequired() {
+        return statsRequired;
+    }
+
+    public void setStatsRequired(boolean statsRequired) {
+        this.statsRequired = statsRequired;
     }
 }

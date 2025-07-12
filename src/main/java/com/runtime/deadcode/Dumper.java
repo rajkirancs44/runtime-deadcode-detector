@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 public class Dumper {
     private static final Gson gson = new Gson();
@@ -22,34 +24,64 @@ public class Dumper {
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
-                String tmpDir = System.getProperty("java.io.tmpdir");
-                File file = new File(tmpDir, "deadcode_snapshot.json");
-                System.out.println("[Dumper] Writing to: " + file.getAbsolutePath());
+//                String tmpDir = System.getProperty("java.io.tmpdir");
+//                File file = new File(tmpDir, "deadcode_snapshot.json");
+//                System.out.println("[Dumper] Writing to: " + file.getAbsolutePath());
 
-                Map<String, ?> snapshot;
-                if (!TrackerRegistry.getMethodCounts().isEmpty()) {
-                    snapshot = TrackerRegistry.getMethodCounts().entrySet().stream()
-                            .collect(java.util.stream.Collectors.toMap(
-                                    Map.Entry::getKey,
-                                    e -> e.getValue().longValue()
-                            ));
-                } else {
-                    snapshot = TrackerRegistry.getSnapshot();
+                Map<String, LongAdder> counts = TrackerRegistry.getMethodCounts();
+                Map<String, Long> times = TrackerRegistry.getMaxExecutionTimes();
+
+                // Combine both into unified JSON structure
+                Map<String, Map<String, Object>> snapshot = new HashMap<>();
+
+                // Merge counts
+                counts.forEach((method, adder) -> {
+                    snapshot
+                            .computeIfAbsent(method, k -> new HashMap<>())
+                            .put("count", adder.longValue());
+                });
+
+                // Merge times
+                times.forEach((method, durationNs) -> {
+                    snapshot
+                            .computeIfAbsent(method, k -> new HashMap<>())
+                            .put("maxTimeMs", durationNs / 1_000_000.0); // Convert to ms
+                });
+
+                // Fallback: if empty, send the simple snapshot
+                if (snapshot.isEmpty()) {
+                    TrackerRegistry.getSnapshot().forEach((className, methods) -> {
+                        methods.forEach(method -> {
+                            snapshot
+                                    .computeIfAbsent(className + "#" + method, k -> new HashMap<>())
+                                    .put("observed", true);
+                        });
+                    });
                 }
 
                 String json = gson.toJson(snapshot);
 
-                try (FileWriter writer = new FileWriter(file)) {
-                    writer.write(json);
-                }
+//                try (FileWriter writer = new FileWriter(file)) {
+//                    writer.write(json);
+//                }
 
-                // Post to remote endpoint
                 postToAnalyzer(analyzerEndpoint, json);
 
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                System.err.println("[Dumper] Error while writing snapshot: " + e.getMessage());
             }
         }, 0, interval, TimeUnit.SECONDS);
+    }
+
+    public static void startScheduledStatsPosting(DeadCodeAgentProperties props) {
+        if (props.isStatsRequired()) {
+            int intervalSeconds = props.getStatsDumpInterval();
+            String analyzerEndpoint = props.getAnalyzerBaseUrl() + "/api/deadcode/stats-jvm";
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+                String json = JVMStatsCollector.buildJvmOsStatsJson();
+                postToAnalyzer(analyzerEndpoint, json);
+            }, 0, intervalSeconds, TimeUnit.SECONDS);
+        }
     }
 
     private static void postToAnalyzer(String endpoint, String json) {
@@ -72,4 +104,26 @@ public class Dumper {
             System.err.println("[Dumper] Error posting to analyzer: " + e.getMessage());
         }
     }
+
+    private static void postToStatsAnalyzer(String endpoint, String json) {
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            byte[] postData = json.getBytes(StandardCharsets.UTF_8);
+            connection.getOutputStream().write(postData);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode >= 200 && responseCode < 300) {
+                System.out.println("[Dumper] Pushed runtime snapshot to analyzer.");
+            } else {
+                System.err.println("[Dumper] Failed to push snapshot: HTTP " + responseCode);
+            }
+
+        } catch (Exception e) {
+            System.err.println("[Dumper] Error posting to analyzer: " + e.getMessage());
+        }
+    }
+
 }

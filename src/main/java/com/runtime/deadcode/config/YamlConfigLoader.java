@@ -26,6 +26,8 @@ public class YamlConfigLoader {
             config.setAnalyzerBaseUrl((String)
                     deadcode.getOrDefault("analyzer-base-url", "http://localhost:9090"));
             config.setDumpIntervalSeconds(Integer.parseInt(String.valueOf(deadcode.get("dump-interval-time"))));
+            config.setStatsRequired(Boolean.parseBoolean(String.valueOf(deadcode.get("stats-scan"))));
+            config.setStatsDumpInterval(Integer.parseInt(String.valueOf(deadcode.get("stats-dump-interval-time"))));
 
         } catch (Exception e) {
             System.err.println("[Agent] Failed to read or parse application.yaml, falling back to deadcode-agent.properties...");
@@ -47,6 +49,8 @@ public class YamlConfigLoader {
             config.setTrackInvocationCount(Boolean.parseBoolean(fileProps.getProperty("deadcode.track-invocation-count", "false")));
             config.setAnalyzerBaseUrl(fileProps.getProperty("deadcode.analyzer-base-url", "http://localhost:9090"));
             config.setDumpIntervalSeconds(10);
+            config.setStatsDumpInterval(120);
+            config.setStatsRequired(true);
         } catch (Exception ex) {
             System.err.println("[Agent] Failed to read fallback deadcode-agent.properties: " + ex.getMessage());
         }

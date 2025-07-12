@@ -7,22 +7,10 @@ import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.description.type.TypeDescription;
 
-import java.io.File;
-import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.instrument.Instrumentation;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.security.CodeSource;
-import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import com.runtime.deadcode.TrackerAdvice;
 
 public class DeadCodeAgent {
 
@@ -41,7 +29,11 @@ public class DeadCodeAgent {
             System.out.println("[Agent] premain() called from: " + Arrays.toString(Thread.currentThread().getStackTrace()));
           //  injectBootstrapJars(inst);
             props = AgentBootstrap.init();
+            System.out.println("[Agent] premain() called and TrackExecutionTime is :"+ props.isTrackExecutionTime() + " and are Tracking Invocation Count"+props.isTrackInvocationCount());
+            TrackerRegistry.configureTiming(props.isTrackExecutionTime());
+            TrackerRegistry.configureCounting(props.isTrackInvocationCount());
             Dumper.start(props);
+            Dumper.startScheduledStatsPosting(props);
             install(inst);
         } catch (Exception e) {
             System.err.println("[Agent] Error in premain:");
@@ -140,71 +132,5 @@ public class DeadCodeAgent {
                 }
             }
         }
-    }
-
-
-
-
-    private static void injectBootstrapJars(Instrumentation inst) {
-        try {
-            CodeSource codeSource = DeadCodeAgent.class.getProtectionDomain().getCodeSource();
-            if (codeSource == null) {
-                System.err.println("[Agent] Cannot locate agent JAR");
-                return;
-            }
-
-            File agentJar = new File(codeSource.getLocation().toURI());
-            try (JarFile jar = new JarFile(agentJar)) {
-                // 1. Inject tracker-bootstrap
-                JarEntry trackerEntry = jar.getJarEntry("lib/tracker-bootstrap-0.1.0.jar");
-                if (trackerEntry != null) {
-                    Path tmp = Files.createTempFile("tracker-bootstrap", ".jar");
-                    try (InputStream is = jar.getInputStream(trackerEntry)) {
-                        Files.copy(is, tmp, StandardCopyOption.REPLACE_EXISTING);
-                        inst.appendToBootstrapClassLoaderSearch(new JarFile(tmp.toFile()));
-                        System.out.println("[Agent] Loaded tracker-bootstrap into bootstrap classloader.");
-                    }
-                }
-
-                // 2. Inject byte-buddy
-                JarEntry bbEntry = jar.getJarEntry("lib/byte-buddy-1.14.12.jar");
-                if (bbEntry != null) {
-                    Path tmp = Files.createTempFile("byte-buddy", ".jar");
-                    try (InputStream is = jar.getInputStream(bbEntry)) {
-                        Files.copy(is, tmp, StandardCopyOption.REPLACE_EXISTING);
-                        inst.appendToBootstrapClassLoaderSearch(new JarFile(tmp.toFile()));
-                        System.out.println("[Agent] Loaded byte-buddy into bootstrap classloader.");
-                    }
-                }
-
-            }
-        } catch (Exception e) {
-            System.err.println("[Agent] Failed to inject bootstrap jars");
-            e.printStackTrace();
-        }
-    }
-
-
-
-
-
-    private static boolean shouldInstrument(TypeDescription typeDescription) {
-        String className = typeDescription.getCanonicalName();
-        if (className == null) return false;
-        if (userPrefix != null) {
-            return className.startsWith(userPrefix);
-        }
-
-        return !(className.startsWith("java.") ||
-                className.startsWith("javax.") ||
-                className.startsWith("sun.") ||
-                className.startsWith("com.sun.") ||
-                className.startsWith("org.springframework.") ||
-                className.startsWith("org.hibernate.") ||
-                className.startsWith("kotlin.") ||
-                className.startsWith("scala.") ||
-                className.startsWith("ch.qos.logback.") ||
-                className.startsWith("org.slf4j.") ||
-                className.startsWith("org.apache."));
     }
 }
