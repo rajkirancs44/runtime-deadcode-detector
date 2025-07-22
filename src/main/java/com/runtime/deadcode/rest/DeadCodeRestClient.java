@@ -12,10 +12,12 @@ public class DeadCodeRestClient {
     public static void triggerStaticScan(DeadCodeAgentProperties config) {
         try {
             String baseUrl = config.getAnalyzerBaseUrl() + "/start-scan";
-            String params = String.format("?repo=%s&branch=%s&packages=%s",
+            String params = String.format("?repo=%s&branch=%s&packages=%s&appId=%s&serviceId=%s",
                     URLEncoder.encode(config.getRepo(), StandardCharsets.UTF_8),
                     URLEncoder.encode(config.getBranch(), StandardCharsets.UTF_8),
-                    URLEncoder.encode(String.join(",", config.getBasePackages()), StandardCharsets.UTF_8));
+                    URLEncoder.encode(String.join(",", config.getBasePackages()), StandardCharsets.UTF_8),
+                    URLEncoder.encode(config.getAppId(), StandardCharsets.UTF_8),
+                    URLEncoder.encode(config.getServiceName(), StandardCharsets.UTF_8));
 
             URL url = new URL(baseUrl + params);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

@@ -13,6 +13,8 @@ public class DeadCodeAgentProperties {
     private int dumpIntervalSeconds = 10; // default
     private int statsDumpInterval=120;
     private boolean statsRequired;
+    private String appId;
+    private String serviceName;
 
     public boolean isStaticScan() {
         return staticScan;
@@ -92,5 +94,21 @@ public class DeadCodeAgentProperties {
 
     public void setStatsRequired(boolean statsRequired) {
         this.statsRequired = statsRequired;
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 }
