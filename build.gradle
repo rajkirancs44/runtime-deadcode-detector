@@ -1,4 +1,20 @@
 // File: agent/build.gradle
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    configurations.all {
+        resolutionStrategy {
+            force 'org.ow2.asm:asm:9.7'
+            force 'org.ow2.asm:asm-commons:9.7'
+            force 'org.ow2.asm:asm-util:9.7'
+            force 'org.ow2.asm:asm-tree:9.7'
+            force 'org.ow2.asm:asm-analysis:9.7'
+        }
+    }
+}
+
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
@@ -12,19 +28,30 @@ repositories {
 }
 
 dependencies {
-   // implementation project(':tracker-bootstrap')
+    // implementation project(':tracker-bootstrap')
     implementation 'net.bytebuddy:byte-buddy:1.14.12'
     implementation 'net.bytebuddy:byte-buddy-agent:1.14.12'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.yaml:snakeyaml:2.2'
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+// --- Force ASM 9.7 everywhere (not just runtime, but also build plugins!)
+configurations.all {
+    resolutionStrategy {
+        force 'org.ow2.asm:asm:9.7'
+        force 'org.ow2.asm:asm-commons:9.7'
+        force 'org.ow2.asm:asm-util:9.7'
+        force 'org.ow2.asm:asm-tree:9.7'
+        force 'org.ow2.asm:asm-analysis:9.7'
+    }
 }
 
-// 👇 Configuration to ensure bootstrap jar is copied locally first
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+// --- Tracker bootstrap copy logic (unchanged)
 def trackerBootstrapJarName = "tracker-bootstrap-0.1.0.jar"
 def trackerBootstrapBuildPath = "${rootProject.projectDir}/tracker-bootstrap/build/libs/${trackerBootstrapJarName}"
 def localLibDir = file("$buildDir/libs")
@@ -37,8 +64,9 @@ tasks.register('copyTrackerBootstrapJar', Copy) {
     rename { trackerBootstrapJarName }
 }
 
+// --- ShadowJar config with relocation (package shading)
 shadowJar {
-  //  dependsOn tasks.named("copyTrackerBootstrapJar")
+    //  dependsOn tasks.named("copyTrackerBootstrapJar")
     archiveClassifier.set("")
     mergeServiceFiles()
     manifest {
@@ -50,41 +78,13 @@ shadowJar {
         )
     }
 
-  /*  doLast {
-        def libDir = file("$buildDir/tmp/shadowJar/lib")
-        libDir.mkdirs()
-
-        // ✅ Safely access the runtimeClasspath from the project context
-        def byteBuddyJar = project.configurations.runtimeClasspath.find {
-            it.name.contains("byte-buddy") && it.name.endsWith(".jar")
-        }
-
-        if (byteBuddyJar == null) {
-            throw new GradleException("ByteBuddy jar not found in runtimeClasspath")
-        }
-
-        copy {
-            from localTrackerCopy
-            into libDir
-        }
-
-        copy {
-            from byteBuddyJar
-            into libDir
-            rename { "byte-buddy-1.14.12.jar" }
-        }
-
-        ant.jar(destfile: archiveFile.get().asFile, update: true) {
-            zipfileset(dir: libDir.toString(), prefix: "lib") {
-                include(name: "tracker-bootstrap-0.1.0.jar")
-                include(name: "byte-buddy-1.14.12.jar")
-            }
-        }*/
-
+    // Relocate all 3rd party packages to avoid host conflicts!
+    relocate 'net.bytebuddy', 'shaded.net.bytebuddy'
+    relocate 'com.google.gson', 'shaded.com.google.gson'
+    relocate 'org.yaml.snakeyaml', 'shaded.org.yaml.snakeyaml'
 }
 
-
-
+// --- Agent distribution packaging
 tasks.register('prepareAgentDist', Copy) {
     dependsOn shadowJar
     from(shadowJar.archiveFile) {
