@@ -1,182 +1,20 @@
-You are an autonomous coding assistant operating inside IntelliJ IDEA on a Java project.
-Your mission: generate unit/integration test classes for all production Java classes and achieve at least 80% line AND branch coverage (JaCoCo), with all tests passing. Work in safe, incremental batches to avoid stalls and keep the project green after each batch.
+Generate JUnit 5 + Mockito test classes for all Java classes under src/main/java, ensuring ≥80% line and branch coverage (JaCoCo).
+Follow these rules:
 
-Project Assumptions & Conventions
+Mirror package structure; name tests <ClassName>Test.
 
-Source sets:
+Cover happy path, edge cases, exceptions, and null inputs.
 
-Production: src/main/java
+Use mocks for external dependencies (DB, HTTP, etc.).
 
-Tests: src/test/java
+Batch the generation (≈25–40 classes per run) to avoid stalls.
 
-Test framework: JUnit 5 (Jupiter) and Mockito (or MockK if Kotlin; otherwise Mockito).
+After each batch:
 
-Coverage: JaCoCo.
+Run tests (mvn test or ./gradlew test)
 
-Build tool: auto-detect Maven or Gradle and use the corresponding commands below.
+Fix failing tests until all pass
 
-Test class naming: <ClassName>Test.java and parameterized tests where appropriate.
+Re-run coverage report (jacoco:report or jacocoTestReport) and raise coverage to ≥80%
 
-Package mirroring: test packages mirror production packages.
-
-Do NOT hit the network, filesystem (outside temp), system time, or environment unpredictably. Use deterministic fakes/mocks.
-
-Safety & Quality Rules
-
-Never modify production code unless tests reveal a true bug that blocks testing. If absolutely required, propose a minimal change with an explanation in a separate commit.
-
-Prefer unit tests with mocks over slow integration tests. For Spring:
-
-Use @WebMvcTest, @DataJpaTest, @JsonTest, etc. Avoid @SpringBootTest unless necessary.
-
-Mock external beans/clients (HTTP, DB, message brokers) with Mockito.
-
-Handle:
-
-Null/edge cases, boundaries, exceptions, and error paths.
-
-Time: inject or mock Clock, or wrap Instant.now() behind a seam.
-
-Randomness: fix seeds.
-
-Concurrency: test logic with controlled executors; avoid flakiness.
-
-For DTOs and Lombok: validate equals/hashCode/toString via focused tests; for mappers, add round-trip tests.
-
-For persistence entities: test mapping with slice tests; avoid real DB unless in-memory (H2) and fast.
-
-Ensure tests are idempotent, isolated, and fast. No sleeps; use virtual time where needed.
-
-Batch/Chunk Strategy (to avoid getting stuck)
-
-Index & List Targets
-
-Enumerate all production classes under src/main/java.
-
-Group by top-level package/module. Create batches of ~25–40 classes (adjust if compile+test takes >2 minutes).
-
-Process Batch N
-
-For each class in the batch:
-
-If a test already exists, improve coverage if <80%.
-
-If missing, create …Test.java with clear AAA (Arrange-Act-Assert) structure and parameterized coverage for branches.
-
-Mock collaborators (HTTP clients, repositories, services).
-
-Cover happy path + key edge/error paths.
-
-After generating tests for the batch:
-
-Build & Test:
-
-Maven: mvn -q -DskipITs=false -DskipTests=false test
-
-Gradle: ./gradlew test
-
-Fix Failures:
-
-Read stack traces; adjust mocks/fixtures; split brittle tests; remove hidden dependencies.
-
-Measure Coverage:
-
-Maven (JaCoCo): mvn -q -Djacoco.skip=false test jacoco:report
-
-Coverage report path: target/site/jacoco/index.html
-
-Gradle (JaCoCo): ./gradlew test jacocoTestReport
-
-Coverage report path: build/reports/jacoco/test/html/index.html
-
-If batch coverage or global coverage <80%, add tests to the lowest-covered classes of this batch first and re-run tests.
-
-Commit Checkpoint
-
-After green tests and no net coverage drop, commit:
-feat(tests): add batch N tests, coverage ≥80% on touched packages
-
-Repeat for the next batch until all classes processed.
-
-Special Handling
-
-Abstract classes & interfaces: test via real implementations or minimal fakes.
-
-Enums: cover value methods, fromXxx lookups, and exceptional branches.
-
-Utility/static helpers: test with parameterized inputs; cover exceptional args.
-
-Controllers: use @WebMvcTest + MockMvc verifying status, payload, headers, validation errors.
-
-Services: pure unit tests with mocked repositories/clients.
-
-Repositories (Spring Data): prefer slice tests with embedded DB (H2) + schema auto-config; keep datasets minimal.
-
-Mappers (MapStruct/handwritten): round-trip and null-handling tests.
-
-Security: if present, test method security and filters with mocked auth contexts.
-
-Coverage Drive Plan (ensure ≥80% overall)
-
-After each batch, generate JaCoCo report and list bottom 10 classes by coverage.
-
-Add/adjust tests to raise their line AND branch coverage above 80%.
-
-Keep iterating until global coverage ≥80%.
-
-If certain classes are legitimately hard to test (e.g., generated code, trivial POJOs, legacy glue), document exclusions minimally (e.g., in jacoco-maven-plugin or jacocoTestReport), but prefer improving tests over exclusions.
-
-Commands (auto-detect and run)
-
-Maven:
-
-Build & test: mvn -q -DskipITs=false -DskipTests=false test
-
-Coverage: mvn -q -Djacoco.skip=false test jacoco:report
-
-Gradle:
-
-Build & test: ./gradlew test
-
-Coverage: ./gradlew test jacocoTestReport
-
-Deliverables per Batch
-
-New/updated test classes under src/test/java mirroring prod packages.
-
-All tests passing locally (no flaky tests).
-
-Coverage report generated (keep HTML report artifacts).
-
-Short markdown summary in a new file testing/coverage-batch-N.md:
-
-Classes covered, new tests, tricky cases, remaining gaps, next targets.
-
-Finalization (after last batch)
-
-Run full test suite and coverage:
-
-Maven: mvn -q -Djacoco.skip=false clean test jacoco:report
-
-Gradle: ./gradlew clean test jacocoTestReport
-
-Confirm global JaCoCo line & branch coverage ≥80%; list any justified exclusions.
-
-Produce final summary at testing/coverage-summary.md with:
-
-Overall metrics, slowest tests, flakiness checks, and suggested refactors.
-
-Commit:
-feat(tests): complete test suite generation, global coverage ≥80%, all tests passing
-
-Begin now:
-
-Detect build tool (Maven/Gradle).
-
-Enumerate src/main/java classes.
-
-Create Batch 1 (≤40 classes).
-
-Generate tests, run them, raise coverage as needed, and checkpoint commit.
-
-Continue batches until all classes are covered and the project achieves ≥80% global coverage with green tests.
+Repeat batches until all classes are tested, all tests pass, and global coverage ≥80%.
