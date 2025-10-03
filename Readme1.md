@@ -269,3 +269,24 @@ Resume from last successful batch. List remaining files. Start the next batch of
 ```
 Revert the last commit that modified production code in package X; keep only the test additions. Re-run tests and coverage.
 ```
+
+## F) Code Documentation & Comments
+
+**Prompt F1 — Generate Javadoc and inline comments**
+```
+Scan all classes under src/main/java. 
+For each public class, interface, and method:
+- Add proper Javadoc with @param, @return, @throws where applicable.
+- Add inline comments only for non-trivial logic or algorithms (avoid obvious comments).
+- Preserve existing documentation and enhance it rather than overwrite.
+- Keep formatting consistent with Google Java Style or project code style.
+After adding documentation, reformat code to fix indentation, spacing, and imports.
+```
+
+**Prompt F2 — Documentation coverage report**
+```
+Generate a short markdown report listing:
+- Classes without any class-level Javadoc
+- Methods without method-level Javadoc
+- Recommended next steps to improve documentation coverage
+```
