@@ -175,6 +175,31 @@ Run tests and ensure coverage ≥80% for affected components.
 
 ---
 
+
+---
+
+## F) Code Documentation & Comments
+
+**Prompt F1 — Generate Javadoc and inline comments**
+```
+Scan all classes under src/main/java. 
+For each public class, interface, and method:
+- Add proper Javadoc with @param, @return, @throws where applicable.
+- Add inline comments only for non-trivial logic or algorithms (avoid obvious comments).
+- Preserve existing documentation and enhance it rather than overwrite.
+- Keep formatting consistent with Google Java Style or project code style.
+After adding documentation, reformat code to fix indentation, spacing, and imports.
+```
+
+**Prompt F2 — Documentation coverage report**
+```
+Generate a short markdown report listing:
+- Classes without any class-level Javadoc
+- Methods without method-level Javadoc
+- Recommended next steps to improve documentation coverage
+```
+
+
 # Live “Wow” Examples You Can Paste
 
 ### 1) Java micro-optimization snippet (before/after)
@@ -249,14 +274,64 @@ trackById(_: number, item: Product) { return item.id; }
 - **Problem:** Code smells, low coverage, slow endpoints, aging deps.
 - **Approach:** Copilot Agentic Mode → batch changes → test → measure → commit → repeat.
 - **Outcomes:**
-    - Sonar: issue count ↓ 70% in 10 min
-    - Coverage: 52% → 82%
-    - p95 latency: 480ms → 220ms on hot path
-    - CVEs: 3 critical fixed via minor upgrades
-    - Angular LCP: 3.8s → 2.4s (OnPush + lazy routes)
+  - Sonar: issue count ↓ 70% in 10 min
+  - Coverage: 52% → 82%
+  - p95 latency: 480ms → 220ms on hot path
+  - CVEs: 3 critical fixed via minor upgrades
+  - Angular LCP: 3.8s → 2.4s (OnPush + lazy routes)
 - **Principles:** small steps, measurable impact, no regressions.
 
 ---
+
+
+---
+
+## G) Code Comprehension with End‑to‑End Flow (Controller → Service → DAO) + Web Context
+
+**Prompt G1 — End‑to‑end flow explainer (with web lookups)**
+```
+Goal: Explain how a request flows through the selected feature end‑to‑end (Controller → Service → DAO/Repository → DB), and enrich the explanation with relevant external references from the web (framework/library docs, best practices).
+
+Scope:
+- Start from the chosen REST endpoint(s) or controller class(es) in src/main/java.
+- Trace the call chain down to services and DAO/repositories, including important helpers (mappers, validators, interceptors, filters, AOP).
+- Identify key domain models and DTOs used along the path.
+
+Output (as Markdown):
+1) High-level summary of the feature in plain English.
+2) A Mermaid sequence diagram of the call flow, with method names and key payload fields.
+3) Controller layer: endpoints, request mappings, validation, auth/roles.
+4) Service layer: core business rules, branching/edge cases, error handling.
+5) DAO/Repository layer: queries executed, projections, transactions, and indexes relied upon.
+6) Data contracts: important DTOs/entities with field notes (only non-sensitive fields).
+7) Performance notes: potential hot paths, IO calls, and caching behavior.
+8) Testing notes: which parts are unit vs slice tests; gaps to cover.
+9) Web context: Search the web for relevant official docs or best-practice articles for any framework/annotation/feature encountered (e.g., Spring @Transactional, JPA fetch types, Mongo aggregation). Include a short bullet with why it matters and the URL.
+10) Glossary: brief definitions of key terms used in the explanation.
+
+Constraints:
+- Do not reveal secrets or full configs; mask credentials/URIs.
+- Prefer official documentation links; avoid low-quality sources.
+- If something is unclear, state the assumption explicitly.
+- Keep to one feature per run; keep the narrative concise and accurate.
+
+After producing the Markdown, also generate a separate Mermaid class diagram that shows the main classes (Controller, Service, Repository, Entities/DTOs) and their relationships.
+```
+
+**Prompt G2 — Targeted method deep‑dive (with examples)**
+```
+Given class {ClassName} and method {methodSignature}, produce:
+1) Purpose and inputs/outputs in plain English.
+2) Pre-conditions, invariants, and side-effects.
+3) Control-flow walkthrough (branches, exceptions) with a small table of example inputs → outputs.
+4) Dependencies and how they are mocked in tests.
+5) Performance considerations and potential improvements (without changing behavior).
+6) Web context: Search the web for relevant official docs or patterns used by this method (e.g., Bean Validation constraints, Reactor operators, JPA query derivation). Add 2–4 concise references with 1‑line relevance and URL.
+7) Test plan: list unit tests to cover all branches (parameterized where useful).
+
+Also emit a Mermaid sequence diagram specific to this method and a short “gotchas” list.
+```
+
 
 # Backup Prompts (if something stalls)
 
@@ -268,25 +343,4 @@ Resume from last successful batch. List remaining files. Start the next batch of
 **“Rollback a noisy change”**
 ```
 Revert the last commit that modified production code in package X; keep only the test additions. Re-run tests and coverage.
-```
-
-## F) Code Documentation & Comments
-
-**Prompt F1 — Generate Javadoc and inline comments**
-```
-Scan all classes under src/main/java. 
-For each public class, interface, and method:
-- Add proper Javadoc with @param, @return, @throws where applicable.
-- Add inline comments only for non-trivial logic or algorithms (avoid obvious comments).
-- Preserve existing documentation and enhance it rather than overwrite.
-- Keep formatting consistent with Google Java Style or project code style.
-After adding documentation, reformat code to fix indentation, spacing, and imports.
-```
-
-**Prompt F2 — Documentation coverage report**
-```
-Generate a short markdown report listing:
-- Classes without any class-level Javadoc
-- Methods without method-level Javadoc
-- Recommended next steps to improve documentation coverage
 ```
