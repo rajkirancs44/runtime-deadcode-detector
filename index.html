@@ -1,0 +1,2272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Covenant + Borrowing Base + Stress Lab (Demo UI)</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111826; --panel2:#0f1623; --text:#e6edf3; --muted:#9fb0c0;
+      --line:#223047; --accent:#4aa3ff; --warn:#ffcc00; --bad:#ff5c5c; --good:#42d392;
+      --chip:#1b2a44; --btn:#1a2a44; --btn2:#132032;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body{
+      margin:0; font-family: var(--sans); background: radial-gradient(1200px 700px at 20% 10%, #13223b 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+    .app { display:flex; flex-direction:column; min-height:100vh; }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; gap:12px; align-items:center; padding:12px 14px;
+      background: rgba(10,14,20,0.75);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .topbar .title{ font-weight:700; letter-spacing:0.2px; }
+    .topbar .spacer{ flex:1; }
+    .pill{
+      display:flex; gap:8px; align-items:center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding:8px 10px; border-radius: 999px;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+    select, input[type="text"], input[type="number"]{
+      background: rgba(17,24,38,0.75);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 10px;
+      padding:8px 10px;
+      outline: none;
+    }
+    input[type="range"]{ width: 100%; }
+    .btn{
+      background: linear-gradient(180deg, rgba(74,163,255,0.22), rgba(74,163,255,0.08));
+      border: 1px solid rgba(74,163,255,0.35);
+      color: var(--text);
+      padding:9px 12px; border-radius: 12px;
+      cursor:pointer;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(255,92,92,0.22), rgba(255,92,92,0.10));
+      border: 1px solid rgba(255,92,92,0.35);
+    }
+    .statusdot{
+      width:10px; height:10px; border-radius:50%;
+      display:inline-block; margin-right:6px;
+    }
+    .dot-draft{ background: var(--warn); }
+    .dot-approved{ background: var(--good); }
+    .dot-published{ background: var(--accent); }
+    .layout { display:flex; gap:12px; padding:12px; flex:1; }
+    .nav{
+      width: 240px; min-width: 220px;
+      background: rgba(17,24,38,0.70);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 10px;
+      box-shadow: var(--shadow);
+      height: calc(100vh - 80px);
+      position: sticky;
+      top: 68px;
+      overflow:auto;
+    }
+    .nav h3{
+      margin: 6px 8px 10px;
+      font-size: 13px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .nav a{
+      display:flex; gap:10px; align-items:center;
+      padding: 10px 10px;
+      border-radius: 12px;
+      color: var(--text);
+      border: 1px solid transparent;
+    }
+    .nav a:hover{ background: rgba(255,255,255,0.06); }
+    .nav a.active{
+      background: rgba(74,163,255,0.12);
+      border: 1px solid rgba(74,163,255,0.25);
+    }
+    .nav .badge{
+      margin-left:auto;
+      font-size: 12px; padding: 3px 8px; border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+    }
+
+    .main{
+      flex:1;
+      display:grid;
+      grid-template-columns: 1fr 340px;
+      gap:12px;
+      align-items:start;
+      min-width: 0;
+    }
+    .card{
+      background: rgba(17,24,38,0.70);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+    .card h2{ margin: 0 0 10px; font-size: 18px; }
+    .subtle{ color: var(--muted); font-size: 13px; }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .split{
+      display:grid; grid-template-columns: 320px 1fr; gap:12px; align-items:start;
+    }
+    .split3{
+      display:grid; grid-template-columns: 320px 1fr 420px; gap:12px; align-items:start;
+    }
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .tab{
+      padding:8px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted);
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{
+      background: rgba(74,163,255,0.12);
+      border-color: rgba(74,163,255,0.25);
+      color: var(--text);
+    }
+    table{ width:100%; border-collapse: collapse; overflow:hidden; border-radius: 12px; }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+    th{ color: var(--muted); font-weight:600; }
+    tr:hover td{ background: rgba(255,255,255,0.04); }
+    .kpi{
+      padding: 10px 10px; border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .kpi .v{ font-size: 18px; font-weight: 700; }
+    .kpi .l{ font-size: 12px; color: var(--muted); margin-top:2px; }
+    .chip{
+      display:inline-flex; gap:6px; align-items:center;
+      padding:4px 8px; border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .chip.good{ background: rgba(66,211,146,0.12); border-color: rgba(66,211,146,0.22); color: #bff3df;}
+    .chip.warn{ background: rgba(255,204,0,0.12); border-color: rgba(255,204,0,0.22); color: #ffe9a0;}
+    .chip.bad{ background: rgba(255,92,92,0.12); border-color: rgba(255,92,92,0.22); color: #ffb3b3;}
+    .mutedBox{
+      background: rgba(15,22,35,0.80);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .context h3{ margin: 0 0 8px; font-size: 15px; }
+    .context .mono{ font-family: var(--mono); font-size: 12px; color: #c9d7e4; }
+    .context .section{ margin-top: 10px; }
+    .divider{ height:1px; background: rgba(255,255,255,0.08); margin:10px 0; }
+    .small{ font-size: 12px; color: var(--muted); }
+    .heatmap{
+      display:grid; grid-template-columns: 190px repeat(8, 1fr);
+      gap: 6px;
+      align-items: stretch;
+      font-size: 12px;
+    }
+    .hmcell, .hmhead{
+      padding:8px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      min-height: 34px;
+      display:flex; align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .hmrowlabel{ justify-content:flex-start; cursor:default; }
+    .hmhead{ cursor:default; color: var(--muted); }
+    .hm-P{ background: rgba(66,211,146,0.10); border-color: rgba(66,211,146,0.20); }
+    .hm-W{ background: rgba(255,204,0,0.10); border-color: rgba(255,204,0,0.20); }
+    .hm-B{ background: rgba(255,92,92,0.10); border-color: rgba(255,92,92,0.20); }
+    .hm-na{ background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); color: rgba(230,237,243,0.5); }
+    .toast{
+      position: fixed;
+      bottom: 16px; right: 16px;
+      max-width: 420px;
+      padding: 10px 12px;
+      background: rgba(17,24,38,0.85);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index: 50;
+    }
+    .toast.show{ display:block; animation: pop 180ms ease-out; }
+    @keyframes pop { from{ transform: translateY(8px); opacity: 0; } to{ transform: translateY(0); opacity: 1; } }
+    .footerHint{
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(230,237,243,0.55);
+    }
+    .btnRow{ display:flex; gap:10px; flex-wrap:wrap; }
+    .linkBtn{
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      color: var(--text);
+    }
+    .linkBtn:hover{ background: rgba(255,255,255,0.08); }
+    .monoBox{
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      color: #cfe0f0;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="title">Office Notes — Deal Covenant UI (HTML Demo)</div>
+
+    <div class="pill">
+      <span class="small">Deal</span>
+      <select id="dealSelect"></select>
+    </div>
+
+    <div class="pill">
+      <span class="small">Facility</span>
+      <select id="facilitySelect"></select>
+    </div>
+
+    <div class="pill">
+      <span class="small">As-of</span>
+      <select id="asofSelect"></select>
+    </div>
+
+    <div class="pill">
+      <span class="small">Scenario</span>
+      <select id="scenarioSelect"></select>
+    </div>
+
+    <div class="pill">
+      <span id="statusDot" class="statusdot dot-draft"></span>
+      <span id="dealStatusText" class="small">DRAFT</span>
+      <span class="small">•</span>
+      <span class="small">Last run:</span>
+      <span id="lastRunText" class="small">—</span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <button class="btn" id="runCalcBtn">Run Calc</button>
+    <button class="btn secondary" id="publishBtn">Publish</button>
+    <button class="btn secondary" id="exportBtn">Export</button>
+  </div>
+
+  <div class="layout">
+    <aside class="nav">
+      <h3>Navigation</h3>
+      <a href="#/overview" data-route="overview"><span>📌</span> Overview <span class="badge" id="badgeOverview">6</span></a>
+      <a href="#/covenants" data-route="covenants"><span>🧩</span> Covenant Studio <span class="badge" id="badgeCov">—</span></a>
+      <a href="#/borrowbase" data-route="borrowbase"><span>🧮</span> Borrowing Base <span class="badge" id="badgeBB">—</span></a>
+      <a href="#/stress/scenarios" data-route="stress"><span>🧪</span> Stress Lab <span class="badge" id="badgeStress">—</span></a>
+      <a href="#/explorer" data-route="explorer"><span>📈</span> Covenant Explorer <span class="badge" id="badgeExplorer">—</span></a>
+      <a href="#/reporting" data-route="reporting"><span>🗂️</span> Reporting <span class="badge" id="badgeRep">—</span></a>
+      <a href="#/data" data-route="data"><span>🧾</span> Data & Definitions <span class="badge">JSON</span></a>
+      <a href="#/approvals" data-route="approvals"><span>✅</span> Exceptions / Approvals <span class="badge" id="badgeAppr">—</span></a>
+
+      <div class="divider"></div>
+      <div class="small">
+        Routes are hash-based. All pages render from JSON state in this single file.
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="card" id="mainView">
+        <!-- routed content -->
+      </section>
+
+      <aside class="card context" id="contextPanel">
+        <h3>Context / Trace</h3>
+        <div class="subtle">Click any number, covenant, or heatmap cell to see lineage, dependencies, and actions.</div>
+        <div class="divider"></div>
+        <div id="contextBody" class="monoBox">Select something in the UI…</div>
+        <div class="footerHint">Tip: open DevTools console to see state updates.</div>
+      </aside>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/** ---------------------------------------------------------
+ *  JSON DATA (single source of truth for all pages)
+ *  --------------------------------------------------------- */
+const DB = {
+  deals: [
+    {
+      id: "deal_acme",
+      name: "ACME Metals",
+      status: "DRAFT", // DRAFT | APPROVED | PUBLISHED
+      lastRunAt: null,
+      facilities: [
+        { id:"fac_revolver_a", name:"Revolver A", commitmentMM: 25.0, currency:"USD" },
+        { id:"fac_term_b", name:"Term Loan B", commitmentMM: 40.0, currency:"USD" }
+      ],
+      asOfPeriods: ["2025-09-30","2025-12-31","2026-01-31"],
+      covenantSet: [
+        {
+          id:"cov_leverage",
+          name:"Leverage Ratio",
+          type:"Maintenance",
+          status:"Active",
+          freq:"Quarterly",
+          nextTest:"2026-03-31",
+          thresholdSchedule:[
+            { effective:"2025-12-31", threshold: 4.75 },
+            { effective:"2026-06-30", threshold: 4.50 }
+          ],
+          definitionPackage:"Standard",
+          metricRefs:["m_net_debt","m_ltm_ebitda"],
+          formula:"Net Debt / LTM EBITDA",
+          headroom: { base: 0.62, downside: 0.18, severe: -0.40 }, // + = cushion, - = breach in x
+          risk:"WARN",
+          dependencies:["m_net_debt","m_ltm_ebitda"]
+        },
+        {
+          id:"cov_fccr",
+          name:"Fixed Charge Coverage (FCCR)",
+          type:"Maintenance",
+          status:"Active",
+          freq:"Quarterly",
+          nextTest:"2026-03-31",
+          thresholdSchedule:[
+            { effective:"2025-12-31", threshold: 1.10 }
+          ],
+          definitionPackage:"Standard",
+          metricRefs:["m_ebitda","m_fixed_charges"],
+          formula:"(EBITDA - Capex) / Fixed Charges",
+          headroom: { base: 0.15, downside: -0.05, severe: -0.22 }, // + = cushion in x; negative = breach
+          risk:"BAD",
+          dependencies:["m_ebitda","m_fixed_charges"]
+        },
+        {
+          id:"cov_liquidity",
+          name:"Minimum Liquidity",
+          type:"Maintenance",
+          status:"Draft",
+          freq:"Monthly",
+          nextTest:"2026-02-29",
+          thresholdSchedule:[
+            { effective:"2026-01-31", thresholdMM: 2.00 }
+          ],
+          definitionPackage:"Standard",
+          metricRefs:["m_liquidity"],
+          formula:"Liquidity >= $2.0MM",
+          headroom: { base: 0.8, downside: 0.2, severe: -0.6 }, // cushion in $MM
+          risk:"OK",
+          dependencies:["m_liquidity"]
+        },
+        {
+          id:"cov_springing_lev",
+          name:"Springing Leverage (Enabled by Availability Trigger)",
+          type:"Springing",
+          status:"Active",
+          freq:"Quarterly",
+          nextTest:"2026-03-31",
+          trigger: { metric:"m_excess_avail_pct", condition:"< 10% for 30 days" },
+          thresholdSchedule:[
+            { effective:"2025-12-31", threshold: 4.75 }
+          ],
+          definitionPackage:"Standard",
+          metricRefs:["m_net_debt","m_ltm_ebitda","m_excess_avail_pct"],
+          formula:"If trigger active: Net Debt / LTM EBITDA <= threshold",
+          headroom: { base: 0.62, downside: 0.10, severe: -0.55 },
+          risk:"WARN",
+          dependencies:["m_net_debt","m_ltm_ebitda","m_excess_avail_pct"]
+        }
+      ],
+      covenantLibrary: [
+        { id:"tpl_leverage", name:"Leverage Ratio", type:"Maintenance", requires:["Net Debt","LTM EBITDA"], freq:"Quarterly", complexity:"Medium" },
+        { id:"tpl_fccr", name:"FCCR / DSCR", type:"Maintenance", requires:["EBITDA","Fixed Charges","Capex"], freq:"Quarterly", complexity:"High" },
+        { id:"tpl_min_liq", name:"Minimum Liquidity", type:"Maintenance", requires:["Liquidity"], freq:"Monthly", complexity:"Low" },
+        { id:"tpl_min_avail", name:"Minimum Excess Availability", type:"BB Trigger", requires:["Excess Availability %"], freq:"Daily/Monthly", complexity:"Medium" },
+        { id:"tpl_capex", name:"Capex Limit", type:"Maintenance", requires:["Capex"], freq:"Annual", complexity:"Low" }
+      ],
+      metrics: [
+        { id:"m_ltm_ebitda", name:"LTM EBITDA", unit:"$MM", base:27.7, downside:24.1, severe:20.2, trace:{
+          sources:["FS_4482 (Q4 2025)","ADJ_120 (Addbacks v3)"],
+          steps:[
+            ["Net Income",12.4],["+ Interest",6.1],["+ Taxes",2.7],["+ D&A",4.3],["+ Allowed Addbacks (cap 25%)",3.0],["- Disallowed items",-0.8],["= LTM EBITDA",27.7]
+          ]
+        }},
+        { id:"m_net_debt", name:"Net Debt", unit:"$MM", base:121.0, downside:125.0, severe:132.5, trace:{
+          sources:["Debt Schedule DS_331","Cash Snapshot CS_908"],
+          steps:[
+            ["Total Debt",128.0],["- Unrestricted Cash",-7.0],["= Net Debt",121.0]
+          ]
+        }},
+        { id:"m_excess_avail_pct", name:"Excess Availability %", unit:"%", base:7.4, downside:4.8, severe:2.1, trace:{
+          sources:["BB Certificate BB_221 (2026-01-31)"],
+          steps:[
+            ["Availability",18.2],["Usage",-15.0],["= Excess",3.2],["Trigger % (Excess/Commitment)",7.4]
+          ]
+        }},
+        { id:"m_liquidity", name:"Liquidity", unit:"$MM", base:2.8, downside:2.2, severe:1.4, trace:{
+          sources:["Cash CS_908","Undrawn Revolver BB_221"],
+          steps:[
+            ["Cash",1.3],["+ Undrawn Availability",1.5],["= Liquidity",2.8]
+          ]
+        }},
+        { id:"m_ebitda", name:"EBITDA (Quarter)", unit:"$MM", base:6.8, downside:5.7, severe:4.6, trace:{
+          sources:["FS_4482 (Q4 2025)","EBITDA Mapping v2"],
+          steps:[["Revenue * Margin - Opex",6.8],["= EBITDA",6.8]]
+        }},
+        { id:"m_fixed_charges", name:"Fixed Charges (Quarter)", unit:"$MM", base:5.8, downside:6.1, severe:6.6, trace:{
+          sources:["Interest Model v1","Debt Schedule DS_331"],
+          steps:[["Cash Interest",3.1],["+ Scheduled Principal",1.9],["+ Cash Taxes",0.8],["= Fixed Charges",5.8]]
+        }}
+      ],
+      borrowingBase: {
+        asOf:"2026-01-31",
+        summary: { availability:18.2, usage:15.0, excess:3.2, triggerPct:7.4, currency:"USD" },
+        waterfall: [
+          ["AR Total",42.0],
+          ["- Ineligible AR",-9.8],
+          ["= Eligible AR",32.2],
+          ["x Advance Rate (85%)",27.4],
+          ["- Concentration Cut",-3.1],
+          ["- Reserves",-6.1],
+          ["= Net Availability",18.2]
+        ],
+        ineligibles: [
+          { reason:"Aging > 90", amount:3.2, pct:7.6, drill:["INV-001","INV-019","INV-044"] },
+          { reason:"Cross-age", amount:2.0, pct:4.8, drill:["CUST-ACME-01","CUST-ACME-07"] },
+          { reason:"Disputes/chargeback", amount:1.1, pct:2.6, drill:["INV-032","INV-033"] },
+          { reason:"Foreign AR", amount:0.8, pct:1.9, drill:["INV-078"] },
+          { reason:"Other", amount:2.7, pct:6.4, drill:["MISC-01"] }
+        ],
+        alerts: ["Dilution ↑ vs prior month", "Concentration near cap (Top customer 21%)"],
+      },
+      stress: {
+        horizons: ["Q+1","Q+2","Q+3","Q+4","Q+5","Q+6","Q+7","Q+8"],
+        scenarios: [
+          {
+            id:"sc_base", name:"Base", status:"APPROVED", type:"Driver-based",
+            drivers:{ ebitdaShockPct:0, rateShockBps:0, dsoDays:0, dilutionPct:0, invHaircutPct:0 },
+            results: {
+              heatmap: {
+                cov_leverage: ["P","P","W","W","W","W","W","W"],
+                cov_fccr: ["P","W","W","W","W","W","W","W"],
+                cov_liquidity: ["P","P","P","P","P","P","P","P"],
+                cov_springing_lev: ["-","P","W","W","W","W","W","W"]
+              },
+              summary: { firstBreach:"None", trigger:"Springing active from Q+2", keyDrivers:["Seasonal working capital","Rate variability (minor)"] },
+              availPath: [18.2,17.3,16.1,15.9,15.6,15.4,15.2,15.1]
+            }
+          },
+          {
+            id:"sc_down1", name:"Downside 1", status:"DRAFT", type:"Driver-based",
+            drivers:{ ebitdaShockPct:-15, rateShockBps:250, dsoDays:12, dilutionPct:1.5, invHaircutPct:10 },
+            results: {
+              heatmap: {
+                cov_leverage: ["P","W","B","B","B","B","B","B"],
+                cov_fccr: ["W","B","B","B","B","B","B","B"],
+                cov_liquidity: ["P","P","W","B","B","B","B","B"],
+                cov_springing_lev: ["-","W","B","B","B","B","B","B"]
+              },
+              summary: { firstBreach:"FCCR in Q+2", trigger:"Springing active from Q+2 (Avail < 10%)", keyDrivers:["EBITDA -15%","SOFR +250bps","DSO +12 days"] },
+              availPath: [18.2,13.9,9.8,8.7,8.0,7.6,7.3,7.1]
+            }
+          },
+          {
+            id:"sc_severe", name:"Severe", status:"DRAFT", type:"Driver-based",
+            drivers:{ ebitdaShockPct:-22, rateShockBps:350, dsoDays:18, dilutionPct:2.5, invHaircutPct:15 },
+            results: {
+              heatmap: {
+                cov_leverage: ["P","W","B","B","B","B","B","B"],
+                cov_fccr: ["W","B","B","B","B","B","B","B"],
+                cov_liquidity: ["P","W","B","B","B","B","B","B"],
+                cov_springing_lev: ["-","W","B","B","B","B","B","B"]
+              },
+              summary: { firstBreach:"FCCR in Q+2", trigger:"Springing active from Q+2", keyDrivers:["EBITDA -22%","SOFR +350bps","DSO +18 days","Dilution +2.5%"] },
+              availPath: [18.2,12.1,8.6,6.3,5.9,5.6,5.5,5.4]
+            }
+          }
+        ],
+        modelMappings: [
+          { id:"map_ebitda_v2", name:"EBITDA Model v2", desc:"EBITDA = Revenue * Margin - Opex", params:{ marginElasticity:0.35 } },
+          { id:"map_interest_v1", name:"Interest Model v1", desc:"Interest = AvgDebt*(SOFR+Spread+Floor)", params:{ floorPct:1.00 } },
+          { id:"map_arshift_v3", name:"AR Aging Shift v3", desc:"DSO shifts % to older buckets (S-curve)", params:{ curve:"S-curve" } },
+          { id:"map_dilution_v1", name:"Dilution Impact v1", desc:"Dilution increases ineligible AR", params:{ slope:1.0 } }
+        ]
+      },
+      reporting: {
+        templates: [
+          { id:"rep_compliance", name:"Compliance Certificate Pack", sections:["Executive Summary","Covenant Worksheets","Borrowing Base Certificate","Exceptions & Overrides","Definitions Appendix"] },
+          { id:"rep_risk", name:"Internal Risk Pack", sections:["Executive Summary","Scenario Heatmap","First Breach Narrative","Borrowing Base Under Stress","Exceptions & Overrides","Definitions Appendix"] }
+        ],
+        publishedReports: []
+      },
+      approvalsQueue: [
+        { id:"appr_1", type:"Override", status:"Pending", item:"Reserve Override (BB)", requestedBy:"Analyst A", impact:"Availability -$1.2MM", window:"2026-02-01 to 2026-03-31", reason:"Seasonal AR volatility", evidence:["Email thread","Borrower CFO note"] },
+        { id:"appr_2", type:"Covenant Change", status:"Pending", item:"Add Minimum Liquidity Covenant", requestedBy:"Analyst B", impact:"New test monthly", window:"Effective 2026-02-01", reason:"Tight liquidity under downside", evidence:["Stress results"] }
+      ]
+    }
+  ]
+};
+
+/** ---------------------------------------------------------
+ *  App state
+ *  --------------------------------------------------------- */
+const App = {
+  state: {
+    dealId: DB.deals[0].id,
+    facilityId: DB.deals[0].facilities[0].id,
+    asOf: DB.deals[0].asOfPeriods[DB.deals[0].asOfPeriods.length-1],
+    scenarioId: DB.deals[0].stress.scenarios[0].id,
+    covStudioTab: "list", // list|graph
+    covConfigTab: "Inputs & Definitions",
+    selectedCovenantId: DB.deals[0].covenantSet[0].id,
+    selectedTraceMetricId: null,
+    stressTab: "scenarios", // scenarios|model|results
+    selectedReportTemplateId: "rep_risk",
+    reportScenarioSet: ["sc_base","sc_down1","sc_severe"]
+  }
+};
+
+function getDeal(){ return DB.deals.find(d => d.id === App.state.dealId); }
+function getScenario(){ return getDeal().stress.scenarios.find(s => s.id === App.state.scenarioId); }
+function getFacility(){ return getDeal().facilities.find(f => f.id === App.state.facilityId); }
+
+function fmtMM(n){ return `${n.toFixed(1)}MM`; }
+function fmtMoneyMM(n, ccy="USD"){ return `${ccy} ${n.toFixed(1)}MM`; }
+function fmtPct(n){ return `${n.toFixed(1)}%`; }
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(()=> el.classList.remove("show"), 2200);
+}
+
+function setContext(text){
+  document.getElementById("contextBody").textContent = text;
+}
+
+/** ---------------------------------------------------------
+ *  Rendering helpers
+ *  --------------------------------------------------------- */
+function htmlesc(s){
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function statusChip(status){
+  const m = { Active:"good", Draft:"warn", Disabled:"bad" };
+  const cls = m[status] || "";
+  return `<span class="chip ${cls}">${htmlesc(status)}</span>`;
+}
+function riskChip(risk){
+  if(risk==="BAD") return `<span class="chip bad">At-risk</span>`;
+  if(risk==="WARN") return `<span class="chip warn">Tight</span>`;
+  return `<span class="chip good">OK</span>`;
+}
+
+function navActive(){
+  const route = location.hash.replace("#/","").split("/")[0] || "overview";
+  document.querySelectorAll(".nav a[data-route]").forEach(a=>{
+    const r = a.getAttribute("data-route");
+    a.classList.toggle("active", route === r || (r==="stress" && route==="stress"));
+  });
+}
+
+function renderTopbarSelectors(){
+  const dealSelect = document.getElementById("dealSelect");
+  dealSelect.innerHTML = DB.deals.map(d=>`<option value="${d.id}">${htmlesc(d.name)}</option>`).join("");
+  dealSelect.value = App.state.dealId;
+
+  const deal = getDeal();
+
+  const facSelect = document.getElementById("facilitySelect");
+  facSelect.innerHTML = deal.facilities.map(f=>`<option value="${f.id}">${htmlesc(f.name)}</option>`).join("");
+  facSelect.value = App.state.facilityId;
+
+  const asofSelect = document.getElementById("asofSelect");
+  asofSelect.innerHTML = deal.asOfPeriods.map(p=>`<option value="${p}">${p}</option>`).join("");
+  asofSelect.value = App.state.asOf;
+
+  const scenarioSelect = document.getElementById("scenarioSelect");
+  scenarioSelect.innerHTML = deal.stress.scenarios.map(s=>`<option value="${s.id}">${htmlesc(s.name)} (${htmlesc(s.status)})</option>`).join("");
+  scenarioSelect.value = App.state.scenarioId;
+
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("dealStatusText");
+  const map = { DRAFT:"dot-draft", APPROVED:"dot-approved", PUBLISHED:"dot-published" };
+  statusDot.className = "statusdot " + (map[deal.status] || "dot-draft");
+  statusText.textContent = deal.status;
+
+  document.getElementById("lastRunText").textContent = deal.lastRunAt || "—";
+
+  // badges
+  document.getElementById("badgeCov").textContent = deal.covenantSet.length;
+  document.getElementById("badgeBB").textContent = "BB";
+  document.getElementById("badgeStress").textContent = deal.stress.scenarios.length;
+  document.getElementById("badgeExplorer").textContent = "KPIs";
+  document.getElementById("badgeRep").textContent = deal.reporting.publishedReports.length || "—";
+  document.getElementById("badgeAppr").textContent = deal.approvalsQueue.filter(x=>x.status==="Pending").length;
+}
+
+/** ---------------------------------------------------------
+ *  Route renderers
+ *  --------------------------------------------------------- */
+function renderOverview(){
+  const deal = getDeal();
+  const fac = getFacility();
+  const sc = getScenario();
+  const covs = deal.covenantSet;
+
+  // Compute quick “risk” counts
+  const atRisk = covs.filter(c=>c.risk==="BAD").length;
+  const tight  = covs.filter(c=>c.risk==="WARN").length;
+
+  const html = `
+    <h2>Overview</h2>
+    <div class="subtle">Quick snapshot for <b>${htmlesc(deal.name)}</b> • Facility: <b>${htmlesc(fac.name)}</b> • As-of: <b>${App.state.asOf}</b> • Scenario: <b>${htmlesc(sc.name)}</b></div>
+    <div class="divider"></div>
+
+    <div class="grid3">
+      <div class="kpi">
+        <div class="v">${covs.length}</div>
+        <div class="l">Covenants in deal</div>
+      </div>
+      <div class="kpi">
+        <div class="v">${tight}</div>
+        <div class="l">Tight / watchlist</div>
+      </div>
+      <div class="kpi">
+        <div class="v">${atRisk}</div>
+        <div class="l">At-risk / breaching</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid2">
+      <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+        <h2 style="margin:0 0 10px; font-size:16px;">Top Covenant Risks</h2>
+        <table>
+          <thead><tr><th>Covenant</th><th>Status</th><th>Risk</th><th>Action</th></tr></thead>
+          <tbody>
+            ${covs.map(c=>`
+              <tr>
+                <td><a href="#/covenants" data-action="selectCov" data-id="${c.id}">${htmlesc(c.name)}</a></td>
+                <td>${statusChip(c.status)}</td>
+                <td>${riskChip(c.risk)}</td>
+                <td><button class="linkBtn" data-action="openTraceForCov" data-id="${c.id}">Open Trace</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+        <h2 style="margin:0 0 10px; font-size:16px;">Borrowing Base Snapshot</h2>
+        <div class="grid2">
+          <div class="kpi"><div class="v">${fmtMoneyMM(deal.borrowingBase.summary.availability, deal.borrowingBase.summary.currency)}</div><div class="l">Availability</div></div>
+          <div class="kpi"><div class="v">${fmtMoneyMM(deal.borrowingBase.summary.excess, deal.borrowingBase.summary.currency)}</div><div class="l">Excess</div></div>
+          <div class="kpi"><div class="v">${fmtMoneyMM(deal.borrowingBase.summary.usage, deal.borrowingBase.summary.currency)}</div><div class="l">Usage</div></div>
+          <div class="kpi"><div class="v">${fmtPct(deal.borrowingBase.summary.triggerPct)}</div><div class="l">Trigger %</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="goto" data-route="#/borrowbase">Open Borrowing Base</button>
+          <button class="btn secondary" data-action="goto" data-route="#/stress/results">Open Stress Results</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("mainView").innerHTML = html;
+
+  wireActions();
+}
+
+function renderCovenants(){
+  const deal = getDeal();
+  const sc = getScenario();
+  const covs = deal.covenantSet;
+  const lib = deal.covenantLibrary;
+  const selected = covs.find(c=>c.id === App.state.selectedCovenantId) || covs[0];
+  App.state.selectedCovenantId = selected.id;
+
+  const viewTab = App.state.covStudioTab;
+
+  const listPane = `
+    <div class="split3">
+      <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+        <h2 style="margin:0 0 10px; font-size:16px;">Covenant Library</h2>
+        <input id="covLibSearch" type="text" placeholder="Search covenants…" style="width:100%; margin-bottom:10px;" />
+        <div id="covLibList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+        <div class="row" style="justify-content:space-between;">
+          <h2 style="margin:0; font-size:16px;">Deal Covenant Set</h2>
+          <div class="row">
+            <span class="chip">Scenario: ${htmlesc(sc.name)}</span>
+            <button class="btn secondary" data-action="bulkEdit">Bulk Edit</button>
+            <button class="btn secondary" data-action="reorderCov">Reorder</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <table>
+          <thead><tr><th>Name</th><th>Next Test</th><th>Status</th><th>Risk</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${covs.map(c=>`
+              <tr>
+                <td>
+                  <a href="javascript:void(0)" data-action="selectCov" data-id="${c.id}">
+                    ${htmlesc(c.name)}
+                  </a>
+                  ${c.type==="Springing" ? `<span class="chip warn">🔗 Springing</span>` : ""}
+                </td>
+                <td>${htmlesc(c.nextTest)}</td>
+                <td>${statusChip(c.status)}</td>
+                <td>${riskChip(c.risk)}</td>
+                <td class="row">
+                  <button class="linkBtn" data-action="openCovConfig" data-id="${c.id}">Config</button>
+                  <button class="linkBtn" data-action="openTraceForCov" data-id="${c.id}">Trace</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+        <h2 style="margin:0 0 10px; font-size:16px;">Configure</h2>
+        <div class="subtle">Selected: <b>${htmlesc(selected.name)}</b></div>
+        <div class="divider"></div>
+
+        <div class="tabs">
+          ${["Inputs & Definitions","Test Rules","Threshold Schedule","Cure","Audit"].map(t=>`
+            <div class="tab ${App.state.covConfigTab===t?"active":""}" data-action="setCovConfigTab" data-tab="${t}">${htmlesc(t)}</div>
+          `).join("")}
+        </div>
+
+        ${renderCovConfig(selected)}
+
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn" data-action="saveDraftCov" data-id="${selected.id}">Save Draft</button>
+          <button class="btn secondary" data-action="requestApprovalCov" data-id="${selected.id}">Request Approval</button>
+          <button class="btn secondary" data-action="duplicateCov" data-id="${selected.id}">Duplicate</button>
+          <button class="btn danger" data-action="toggleCov" data-id="${selected.id}">${selected.status==="Disabled"?"Enable":"Disable"}</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const graphPane = renderCovGraph(deal);
+
+  const html = `
+    <h2>Covenant Studio</h2>
+    <div class="subtle">Build covenants from templates, configure definitions, and visualize dependencies (DAG).</div>
+    <div class="divider"></div>
+    <div class="tabs">
+      <div class="tab ${viewTab==="list"?"active":""}" data-action="setCovStudioTab" data-tab="list">List</div>
+      <div class="tab ${viewTab==="graph"?"active":""}" data-action="setCovStudioTab" data-tab="graph">Graph</div>
+      <div class="tab" data-action="goto" data-route="#/explorer">Compare / Explore</div>
+    </div>
+    ${viewTab==="list" ? listPane : graphPane}
+  `;
+
+  document.getElementById("mainView").innerHTML = html;
+
+  // render library list with search
+  const covLibList = document.getElementById("covLibList");
+  const searchInput = document.getElementById("covLibSearch");
+  function renderLib(q=""){
+    const ql = q.trim().toLowerCase();
+    const items = lib.filter(x => !ql || x.name.toLowerCase().includes(ql) || x.type.toLowerCase().includes(ql));
+    covLibList.innerHTML = items.map(t=>`
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div><b>${htmlesc(t.name)}</b> <span class="chip">${htmlesc(t.type)}</span></div>
+          <div class="row">
+            <button class="linkBtn" data-action="previewTemplate" data-id="${t.id}">Preview</button>
+            <button class="linkBtn" data-action="addTemplate" data-id="${t.id}">Add</button>
+          </div>
+        </div>
+        <div class="small">Requires: ${t.requires.map(r=>`<span class="chip">${htmlesc(r)}</span>`).join(" ")}</div>
+        <div class="small">Freq: ${htmlesc(t.freq)} • Complexity: ${htmlesc(t.complexity)}</div>
+      </div>
+    `).join("");
+    wireActions();
+  }
+  renderLib();
+  searchInput?.addEventListener("input", e=> renderLib(e.target.value));
+
+  wireActions();
+}
+
+function renderCovConfig(c){
+  const deal = getDeal();
+  const metrics = deal.metrics;
+
+  const tab = App.state.covConfigTab;
+  if(tab==="Inputs & Definitions"){
+    return `
+      <div class="mutedBox">
+        <div class="row">
+          <div style="flex:1;">
+            <div class="small">Definition package</div>
+            <select data-action="editCovField" data-id="${c.id}" data-field="definitionPackage" style="width:100%;">
+              ${["Standard","Sponsor-friendly","Custom"].map(p=>`<option value="${p}" ${c.definitionPackage===p?"selected":""}>${p}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="small">Dependencies (upstream metrics)</div>
+        <div class="row" style="margin-top:6px;">
+          ${c.dependencies.map(mid=>{
+            const m = metrics.find(x=>x.id===mid);
+            return `<button class="linkBtn" data-action="openMetricTrace" data-id="${mid}">${htmlesc(m?.name||mid)}</button>`;
+          }).join("")}
+        </div>
+
+        ${c.trigger ? `
+          <div class="divider"></div>
+          <div class="small">Springing trigger</div>
+          <div class="monoBox">${htmlesc(c.trigger.metric)} ${htmlesc(c.trigger.condition)}</div>
+        `:""}
+
+        <div class="divider"></div>
+        <div class="small">Formula</div>
+        <div class="monoBox">${htmlesc(c.formula)}</div>
+      </div>
+    `;
+  }
+  if(tab==="Test Rules"){
+    return `
+      <div class="mutedBox">
+        <div class="row">
+          <div style="flex:1;">
+            <div class="small">Frequency</div>
+            <select data-action="editCovField" data-id="${c.id}" data-field="freq" style="width:100%;">
+              ${["Monthly","Quarterly","Annual"].map(p=>`<option value="${p}" ${c.freq===p?"selected":""}>${p}</option>`).join("")}
+            </select>
+          </div>
+          <div style="flex:1;">
+            <div class="small">Next test date</div>
+            <input type="text" value="${htmlesc(c.nextTest)}" data-action="editCovFieldInput" data-id="${c.id}" data-field="nextTest" style="width:100%;" />
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="small">Actions</div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="recalcNow">Re-run calculations</button>
+          <button class="btn secondary" data-action="openDependencies" data-id="${c.id}">Open dependency graph</button>
+        </div>
+      </div>
+    `;
+  }
+  if(tab==="Threshold Schedule"){
+    return `
+      <div class="mutedBox">
+        <div class="small">Step-down schedule</div>
+        <table style="margin-top:8px;">
+          <thead><tr><th>Effective</th><th>Threshold</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${c.thresholdSchedule.map((s, idx)=>`
+              <tr>
+                <td>${htmlesc(s.effective)}</td>
+                <td>${htmlesc(s.threshold ?? s.thresholdMM)}</td>
+                <td class="row">
+                  <button class="linkBtn" data-action="removeThresholdRow" data-id="${c.id}" data-idx="${idx}">Remove</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="divider"></div>
+        <div class="row">
+          <input id="newEff" type="text" placeholder="Effective (YYYY-MM-DD)" style="flex:1;">
+          <input id="newThr" type="number" step="0.01" placeholder="Threshold" style="width:140px;">
+          <button class="btn secondary" data-action="addThresholdRow" data-id="${c.id}">Add</button>
+        </div>
+      </div>
+    `;
+  }
+  if(tab==="Cure"){
+    return `
+      <div class="mutedBox">
+        <div class="small">Cure mechanics (demo placeholders)</div>
+        <div class="divider"></div>
+        <label class="row" style="align-items:flex-start;">
+          <input type="checkbox" checked disabled />
+          <div>
+            <div><b>Equity cure permitted</b> (demo)</div>
+            <div class="small">Limits, carry-forward, and application rules controlled by admin definitions.</div>
+          </div>
+        </label>
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="requestWaiver" data-id="${c.id}">Request Waiver</button>
+          <button class="btn secondary" data-action="openReportBuilder">Include cure analysis in report</button>
+        </div>
+      </div>
+    `;
+  }
+  // Audit tab
+  return `
+    <div class="mutedBox">
+      <div class="small">Audit Trail</div>
+      <div class="divider"></div>
+      <div class="monoBox">• 2026-02-25 Analyst A edited definition package\n• 2026-02-25 Manager B approved previous version\n• Overrides: none</div>
+      <div class="divider"></div>
+      <div class="btnRow">
+        <button class="btn secondary" data-action="attachEvidence" data-id="${c.id}">Attach Evidence</button>
+        <button class="btn secondary" data-action="openTraceForCov" data-id="${c.id}">Open Trace</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderCovGraph(deal){
+  const covs = deal.covenantSet;
+  const metrics = deal.metrics;
+
+  // Minimal “graph” rendering (not a real graph lib): show nodes + edges in text blocks
+  const edges = [];
+  covs.forEach(c=>{
+    c.dependencies.forEach(mid=>{
+      const m = metrics.find(x=>x.id===mid);
+      edges.push({ from: m?.name || mid, to: c.name, type:"metric->covenant", mid, cid:c.id });
+    });
+    if(c.trigger){
+      edges.push({ from: metrics.find(x=>x.id===c.trigger.metric)?.name || c.trigger.metric, to: `${c.name} (trigger)`, type:"trigger", mid:c.trigger.metric, cid:c.id });
+    }
+  });
+
+  return `
+    <div class="card" style="padding:12px; background:rgba(15,22,35,0.65); border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2 style="margin:0; font-size:16px;">Dependency Graph (DAG) — simplified</h2>
+          <div class="small">Click a node to see trace and impacted covenants.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" data-action="impactPreview">Impact Preview</button>
+          <button class="btn secondary" data-action="autoLayout">Auto-layout</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <div class="mutedBox">
+          <div class="small">Metric Nodes</div>
+          <div class="divider"></div>
+          ${metrics.map(m=>`
+            <button class="linkBtn" style="width:100%; text-align:left; margin-bottom:8px;"
+              data-action="openMetricTrace" data-id="${m.id}">
+              ${htmlesc(m.name)} <span class="chip">${htmlesc(m.unit)}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="mutedBox">
+          <div class="small">Covenant Nodes</div>
+          <div class="divider"></div>
+          ${covs.map(c=>`
+            <button class="linkBtn" style="width:100%; text-align:left; margin-bottom:8px;"
+              data-action="selectCov" data-id="${c.id}">
+              ${htmlesc(c.name)} ${c.type==="Springing" ? `<span class="chip warn">🔗</span>`:""} ${riskChip(c.risk)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="mutedBox">
+        <div class="small">Edges</div>
+        <div class="divider"></div>
+        <table>
+          <thead><tr><th>From</th><th>→</th><th>To</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${edges.map(e=>`
+              <tr>
+                <td>${htmlesc(e.from)}</td>
+                <td>→</td>
+                <td>${htmlesc(e.to)}</td>
+                <td class="row">
+                  <button class="linkBtn" data-action="openMetricTrace" data-id="${e.mid}">Metric Trace</button>
+                  <button class="linkBtn" data-action="selectCov" data-id="${e.cid}">Open Covenant</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderBorrowBase(){
+  const deal = getDeal();
+  const bb = deal.borrowingBase;
+  const ccy = bb.summary.currency;
+
+  const html = `
+    <h2>Borrowing Base</h2>
+    <div class="subtle">Availability calculation + ineligibles, caps, reserves with drilldown.</div>
+    <div class="divider"></div>
+
+    <div class="grid3">
+      <div class="kpi"><div class="v">${fmtMoneyMM(bb.summary.availability, ccy)}</div><div class="l">Availability</div></div>
+      <div class="kpi"><div class="v">${fmtMoneyMM(bb.summary.usage, ccy)}</div><div class="l">Usage</div></div>
+      <div class="kpi"><div class="v">${fmtMoneyMM(bb.summary.excess, ccy)}</div><div class="l">Excess</div></div>
+    </div>
+    <div class="divider"></div>
+
+    <div class="split">
+      <div class="mutedBox">
+        <div class="small">Actions</div>
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="uploadCollateral">Upload Report</button>
+          <button class="btn" data-action="runBB">Run BB</button>
+          <button class="btn secondary" data-action="addReserve">Add Reserve (override)</button>
+        </div>
+        <div class="divider"></div>
+        <div class="small">Alerts</div>
+        <div class="divider"></div>
+        ${bb.alerts.map(a=>`<div class="chip warn" style="margin-bottom:8px;">⚠ ${htmlesc(a)}</div>`).join("")}
+      </div>
+
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small">Waterfall</div>
+          <button class="linkBtn" data-action="openBBTrace">Open Trace</button>
+        </div>
+        <div class="divider"></div>
+        <table>
+          <thead><tr><th>Step</th><th>Amount</th><th>Action</th></tr></thead>
+          <tbody>
+            ${bb.waterfall.map(step=>`
+              <tr>
+                <td>${htmlesc(step[0])}</td>
+                <td>${fmtMoneyMM(step[1], ccy)}</td>
+                <td><button class="linkBtn" data-action="bbStepExplain" data-step="${htmlesc(step[0])}">Explain</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <div class="divider"></div>
+        <div class="small">Ineligibles Breakdown</div>
+        <table style="margin-top:8px;">
+          <thead><tr><th>Reason</th><th>Amount</th><th>%</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${bb.ineligibles.map((x,i)=>`
+              <tr>
+                <td>${htmlesc(x.reason)}</td>
+                <td>${fmtMoneyMM(x.amount, ccy)}</td>
+                <td>${x.pct.toFixed(1)}%</td>
+                <td class="row">
+                  <button class="linkBtn" data-action="drillIneligibles" data-idx="${i}">Drill</button>
+                  <button class="linkBtn" data-action="overrideEligibility" data-idx="${i}">Override</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById("mainView").innerHTML = html;
+  wireActions();
+}
+
+function renderStress(){
+  const deal = getDeal();
+  const tab = App.state.stressTab;
+  const html = `
+    <h2>Stress Lab</h2>
+    <div class="subtle">Create scenarios, map drivers to financials/BB/covenants, and view heatmap results.</div>
+    <div class="divider"></div>
+    <div class="tabs">
+      <div class="tab ${tab==="scenarios"?"active":""}" data-action="setStressTab" data-tab="scenarios">Scenarios</div>
+      <div class="tab ${tab==="model"?"active":""}" data-action="setStressTab" data-tab="model">Model</div>
+      <div class="tab ${tab==="results"?"active":""}" data-action="setStressTab" data-tab="results">Results</div>
+    </div>
+    ${tab==="scenarios" ? renderStressScenarios(deal)
+      : tab==="model" ? renderStressModel(deal)
+      : renderStressResults(deal)}
+  `;
+  document.getElementById("mainView").innerHTML = html;
+  wireActions();
+}
+
+function renderStressScenarios(deal){
+  const scs = deal.stress.scenarios;
+  const selected = scs.find(s=>s.id===App.state.scenarioId) || scs[0];
+  App.state.scenarioId = selected.id;
+
+  const d = selected.drivers;
+  return `
+    <div class="split">
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small">Scenario List</div>
+          <div class="row">
+            <button class="btn secondary" data-action="newScenario">New</button>
+            <button class="btn secondary" data-action="cloneScenario">Clone</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        ${scs.map(s=>`
+          <div class="row" style="justify-content:space-between; padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); background: ${s.id===selected.id?"rgba(74,163,255,0.10)":"rgba(255,255,255,0.04)"}; margin-bottom:10px;">
+            <div>
+              <div><b>${htmlesc(s.name)}</b> <span class="chip">${htmlesc(s.status)}</span></div>
+              <div class="small">${htmlesc(s.type)}</div>
+            </div>
+            <div class="row">
+              <button class="linkBtn" data-action="selectScenario" data-id="${s.id}">Open</button>
+              <button class="linkBtn" data-action="deleteScenario" data-id="${s.id}">Delete</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div class="small">Scenario Builder</div>
+            <div><b>${htmlesc(selected.name)}</b> <span class="chip">${htmlesc(selected.status)}</span></div>
+          </div>
+          <div class="row">
+            <button class="btn secondary" data-action="goto" data-route="#/stress/results">Go to Results</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+
+        <div class="grid2">
+          <div>
+            <div class="small">EBITDA shock (%)</div>
+            <input type="range" min="-30" max="0" value="${d.ebitdaShockPct}" data-action="editDriver" data-field="ebitdaShockPct" />
+            <div class="monoBox">${d.ebitdaShockPct}%</div>
+          </div>
+          <div>
+            <div class="small">Rate shock (bps)</div>
+            <input type="range" min="0" max="500" value="${d.rateShockBps}" data-action="editDriver" data-field="rateShockBps" />
+            <div class="monoBox">+${d.rateShockBps} bps</div>
+          </div>
+          <div>
+            <div class="small">DSO increase (days)</div>
+            <input type="range" min="0" max="30" value="${d.dsoDays}" data-action="editDriver" data-field="dsoDays" />
+            <div class="monoBox">+${d.dsoDays} days</div>
+          </div>
+          <div>
+            <div class="small">Dilution increase (%)</div>
+            <input type="range" min="0" max="5" step="0.1" value="${d.dilutionPct}" data-action="editDriver" data-field="dilutionPct" />
+            <div class="monoBox">+${d.dilutionPct}%</div>
+          </div>
+          <div style="grid-column: 1 / span 2;">
+            <div class="small">Inventory haircut (%)</div>
+            <input type="range" min="0" max="30" value="${d.invHaircutPct}" data-action="editDriver" data-field="invHaircutPct" />
+            <div class="monoBox">+${d.invHaircutPct}%</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn" data-action="runScenario" data-id="${selected.id}">Run Scenario</button>
+          <button class="btn secondary" data-action="saveScenario" data-id="${selected.id}">Save Draft</button>
+          <button class="btn secondary" data-action="requestScenarioApproval" data-id="${selected.id}">Request Approval</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStressModel(deal){
+  return `
+    <div class="split">
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small">Mapping Catalog</div>
+          <button class="btn secondary" data-action="newMapping">Create New</button>
+        </div>
+        <div class="divider"></div>
+        ${deal.stress.modelMappings.map(m=>`
+          <div class="mutedBox" style="margin-bottom:10px;">
+            <div class="row" style="justify-content:space-between;">
+              <div><b>${htmlesc(m.name)}</b></div>
+              <div class="row">
+                <button class="linkBtn" data-action="editMapping" data-id="${m.id}">Edit</button>
+                <button class="linkBtn" data-action="versionHistory" data-id="${m.id}">History</button>
+              </div>
+            </div>
+            <div class="small">${htmlesc(m.desc)}</div>
+            <div class="small">Params: <span class="mono">${htmlesc(JSON.stringify(m.params))}</span></div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="mutedBox">
+        <div class="small">Model Notes</div>
+        <div class="divider"></div>
+        <div class="monoBox">
+Driver-based stress works in 3 stages:
+1) Drivers → Financial projections (EBITDA, cash, interest)
+2) Drivers → Borrowing base impacts (DSO aging shift, dilution → ineligibles)
+3) Projected metrics → Covenant tests (with springing dependencies)
+
+This page is admin/power-user territory (versioned & lockable).
+        </div>
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="lockMappings">Lock mappings</button>
+          <button class="btn secondary" data-action="openAudit">Open audit log</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStressResults(deal){
+  const sc = getScenario();
+  const hz = deal.stress.horizons;
+  const hm = sc.results.heatmap;
+  const covs = deal.covenantSet;
+
+  // Heatmap grid
+  const rows = covs.map(c=>{
+    const key = c.id;
+    const cells = (hm[key] || Array(hz.length).fill("-")).map((v, idx)=>{
+      const cls = v==="P" ? "hm-P" : v==="W" ? "hm-W" : v==="B" ? "hm-B" : "hm-na";
+      return `<div class="hmcell ${cls}" data-action="heatmapCell" data-cov="${c.id}" data-idx="${idx}">${v}</div>`;
+    }).join("");
+    return `<div class="hmcell hmrowlabel" style="justify-content:flex-start; cursor:default;"><b>${htmlesc(c.name)}</b></div>${cells}`;
+  }).join("");
+
+  const heads = `<div class="hmhead hmrowlabel">Covenant</div>` + hz.map(h=>`<div class="hmhead">${htmlesc(h)}</div>`).join("");
+
+  return `
+    <div class="split">
+      <div class="mutedBox">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div class="small">Scenario</div>
+            <div><b>${htmlesc(sc.name)}</b> <span class="chip">${htmlesc(sc.status)}</span></div>
+          </div>
+          <div class="row">
+            <button class="btn" data-action="runScenario" data-id="${sc.id}">Re-run</button>
+            <button class="btn secondary" data-action="exportScenario" data-id="${sc.id}">Export</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+
+        <div class="small">Covenant Heatmap (click cell)</div>
+        <div class="divider"></div>
+        <div class="heatmap">
+          ${heads}
+          ${rows}
+        </div>
+
+        <div class="divider"></div>
+        <div class="row">
+          <span class="chip good">P = Pass</span>
+          <span class="chip warn">W = Watch</span>
+          <span class="chip bad">B = Breach</span>
+          <span class="chip">- = N/A</span>
+        </div>
+      </div>
+
+      <div class="mutedBox">
+        <div class="small">Summary</div>
+        <div class="divider"></div>
+        <div class="monoBox">
+First breach: ${sc.results.summary.firstBreach}
+Trigger: ${sc.results.summary.trigger}
+Key drivers:
+- ${sc.results.summary.keyDrivers.join("\n- ")}
+        </div>
+
+        <div class="divider"></div>
+        <div class="small">Availability Path (MM)</div>
+        <div class="divider"></div>
+        <table>
+          <thead><tr>${hz.map(h=>`<th>${htmlesc(h)}</th>`).join("")}</tr></thead>
+          <tbody><tr>${sc.results.availPath.map(v=>`<td>${v.toFixed(1)}</td>`).join("")}</tr></tbody>
+        </table>
+
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="goto" data-route="#/borrowbase">Drill Borrowing Base</button>
+          <button class="btn secondary" data-action="goto" data-route="#/explorer">Open Explorer</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderExplorer(){
+  const deal = getDeal();
+  const sc = getScenario();
+  const cov = deal.covenantSet.find(c=>c.id===App.state.selectedCovenantId) || deal.covenantSet[0];
+
+  const html = `
+    <h2>Covenant Explorer</h2>
+    <div class="subtle">Explore headroom, what-changed breakdown, sensitivities, and dependency chain.</div>
+    <div class="divider"></div>
+
+    <div class="row">
+      <span class="small">Covenant</span>
+      <select id="explorerCovSelect">
+        ${deal.covenantSet.map(c=>`<option value="${c.id}" ${c.id===cov.id?"selected":""}>${htmlesc(c.name)}</option>`).join("")}
+      </select>
+      <span class="chip">Scenario: ${htmlesc(sc.name)}</span>
+      <button class="btn secondary" data-action="openDependencies" data-id="${cov.id}">Open Graph</button>
+      <button class="btn secondary" data-action="openTraceForCov" data-id="${cov.id}">Open Trace</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid3">
+      <div class="kpi">
+        <div class="v">${(cov.headroom.base).toFixed(2)}${cov.name.includes("Liquidity")?"MM":"x"}</div>
+        <div class="l">Headroom (Base)</div>
+      </div>
+      <div class="kpi">
+        <div class="v">${(cov.headroom.downside).toFixed(2)}${cov.name.includes("Liquidity")?"MM":"x"}</div>
+        <div class="l">Headroom (Downside 1)</div>
+      </div>
+      <div class="kpi">
+        <div class="v">${(cov.headroom.severe).toFixed(2)}${cov.name.includes("Liquidity")?"MM":"x"}</div>
+        <div class="l">Headroom (Severe)</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="split">
+      <div class="mutedBox">
+        <div class="small">Sensitivity Sliders (micro-stress demo)</div>
+        <div class="divider"></div>
+        <div class="small">EBITDA</div>
+        <input type="range" min="-30" max="0" value="-10" data-action="microStress" data-kind="ebitda" />
+        <div class="small">Rates</div>
+        <input type="range" min="0" max="500" value="200" data-action="microStress" data-kind="rates" />
+        <div class="small">DSO</div>
+        <input type="range" min="0" max="30" value="8" data-action="microStress" data-kind="dso" />
+        <div class="divider"></div>
+        <button class="btn secondary" data-action="applyMicroStress" data-id="${cov.id}">Apply (demo)</button>
+        <button class="btn secondary" data-action="resetMicroStress">Reset</button>
+      </div>
+
+      <div class="mutedBox">
+        <div class="small">Dependency Inspector</div>
+        <div class="divider"></div>
+        <div class="monoBox">This covenant depends on:
+- ${cov.dependencies.map(id=>deal.metrics.find(m=>m.id===id)?.name || id).join("\n- ")}
+${cov.trigger ? "\nSpringing trigger:\n- " + (deal.metrics.find(m=>m.id===cov.trigger.metric)?.name || cov.trigger.metric) + " " + cov.trigger.condition : ""}</div>
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn secondary" data-action="openDependencies" data-id="${cov.id}">Show DAG</button>
+          <button class="btn secondary" data-action="comparePeriods">What changed vs last period</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("mainView").innerHTML = html;
+
+  document.getElementById("explorerCovSelect").addEventListener("change", e=>{
+    App.state.selectedCovenantId = e.target.value;
+    render(); // rerender
+  });
+
+  wireActions();
+}
+
+function renderReporting(){
+  const deal = getDeal();
+  const templates = deal.reporting.templates;
+  const tpl = templates.find(t=>t.id===App.state.selectedReportTemplateId) || templates[0];
+
+  const scs = deal.stress.scenarios;
+  const html = `
+    <h2>Reporting</h2>
+    <div class="subtle">Build report packs (PDF/Excel) from deal data + scenarios; publish immutable versions.</div>
+    <div class="divider"></div>
+
+    <div class="row">
+      <span class="small">Template</span>
+      <select id="repTplSelect">
+        ${templates.map(t=>`<option value="${t.id}" ${t.id===tpl.id?"selected":""}>${htmlesc(t.name)}</option>`).join("")}
+      </select>
+
+      <span class="small">Scenario set</span>
+      <select id="repScSet" multiple size="3" style="min-width:220px;">
+        ${scs.map(s=>`<option value="${s.id}" ${App.state.reportScenarioSet.includes(s.id)?"selected":""}>${htmlesc(s.name)}</option>`).join("")}
+      </select>
+
+      <button class="btn secondary" data-action="saveReportConfig">Save</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="split">
+      <div class="mutedBox">
+        <div class="small">Sections (drag/drop in real app — here: move up/down)</div>
+        <div class="divider"></div>
+        <div id="repSections">
+          ${tpl.sections.map((s, idx)=>`
+            <div class="row" style="justify-content:space-between; padding:10px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(255,255,255,0.04); margin-bottom:10px;">
+              <div><b>${htmlesc(s)}</b></div>
+              <div class="row">
+                <button class="linkBtn" data-action="moveSectionUp" data-idx="${idx}">↑</button>
+                <button class="linkBtn" data-action="moveSectionDown" data-idx="${idx}">↓</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="divider"></div>
+        <div class="btnRow">
+          <button class="btn" data-action="generateDraftReport">Generate Draft</button>
+          <button class="btn secondary" data-action="sendReportApproval">Send for Approval</button>
+          <button class="btn secondary" data-action="publishReport">Publish Report Version</button>
+        </div>
+      </div>
+
+      <div class="mutedBox">
+        <div class="small">Preview (mock)</div>
+        <div class="divider"></div>
+        <div class="monoBox">Report: ${htmlesc(tpl.name)}
+Sections:
+- ${tpl.sections.join("\n- ")}
+
+Scenarios included:
+- ${App.state.reportScenarioSet.map(id=> scs.find(s=>s.id===id)?.name || id).join("\n- ")}
+
+Output: PDF (demo)
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("mainView").innerHTML = html;
+
+  document.getElementById("repTplSelect").addEventListener("change", e=>{
+    App.state.selectedReportTemplateId = e.target.value;
+    render();
+  });
+
+  document.getElementById("repScSet").addEventListener("change", ()=>{
+    const sel = Array.from(document.getElementById("repScSet").selectedOptions).map(o=>o.value);
+    App.state.reportScenarioSet = sel;
+  });
+
+  wireActions();
+}
+
+function renderData(){
+  const deal = getDeal();
+  const html = `
+    <h2>Data & Definitions</h2>
+    <div class="subtle">Raw JSON used by the UI (deal, covenants, metrics, BB, scenarios).</div>
+    <div class="divider"></div>
+    <div class="btnRow">
+      <button class="btn secondary" data-action="copyJson">Copy JSON to clipboard</button>
+      <button class="btn secondary" data-action="downloadJson">Download JSON</button>
+      <button class="btn secondary" data-action="validateJson">Validate (demo)</button>
+    </div>
+    <div class="divider"></div>
+    <div class="mutedBox monoBox" style="max-height: 70vh; overflow:auto;">${htmlesc(JSON.stringify(deal, null, 2))}</div>
+  `;
+  document.getElementById("mainView").innerHTML = html;
+  wireActions();
+}
+
+function renderApprovals(){
+  const deal = getDeal();
+  const pending = deal.approvalsQueue.filter(x=>x.status==="Pending");
+
+  const html = `
+    <h2>Exceptions / Approvals</h2>
+    <div class="subtle">Governance queue: overrides, covenant changes, and report approvals.</div>
+    <div class="divider"></div>
+
+    <table>
+      <thead><tr><th>Type</th><th>Item</th><th>Status</th><th>Impact</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${deal.approvalsQueue.map(a=>`
+          <tr>
+            <td>${htmlesc(a.type)}</td>
+            <td><b>${htmlesc(a.item)}</b><div class="small">By ${htmlesc(a.requestedBy)}</div></td>
+            <td>${a.status==="Pending" ? `<span class="chip warn">Pending</span>` : `<span class="chip good">${htmlesc(a.status)}</span>`}</td>
+            <td>${htmlesc(a.impact)}</td>
+            <td class="row">
+              <button class="linkBtn" data-action="openApproval" data-id="${a.id}">Open</button>
+              ${a.status==="Pending" ? `
+                <button class="linkBtn" data-action="approveItem" data-id="${a.id}">Approve</button>
+                <button class="linkBtn" data-action="rejectItem" data-id="${a.id}">Reject</button>
+              `:""}
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+    <div class="small">Pending: <b>${pending.length}</b></div>
+  `;
+  document.getElementById("mainView").innerHTML = html;
+  wireActions();
+}
+
+/** ---------------------------------------------------------
+ *  Router
+ *  --------------------------------------------------------- */
+function route(){
+  const hash = location.hash || "#/overview";
+  const parts = hash.replace("#/","").split("/");
+  const base = parts[0] || "overview";
+
+  // map nested stress routes
+  if(base === "stress"){
+    App.state.stressTab = (parts[1] || "scenarios");
+  }
+
+  navActive();
+  renderTopbarSelectors();
+
+  if(base==="overview") return renderOverview();
+  if(base==="covenants") return renderCovenants();
+  if(base==="borrowbase") return renderBorrowBase();
+  if(base==="stress") return renderStress();
+  if(base==="explorer") return renderExplorer();
+  if(base==="reporting") return renderReporting();
+  if(base==="data") return renderData();
+  if(base==="approvals") return renderApprovals();
+
+  // fallback
+  location.hash = "#/overview";
+}
+
+function render(){ route(); }
+
+/** ---------------------------------------------------------
+ *  Action wiring
+ *  --------------------------------------------------------- */
+function wireActions(){
+  // anchor-like actions
+  document.querySelectorAll("[data-action]").forEach(el=>{
+    el.onclick = (e)=>{
+      const act = el.getAttribute("data-action");
+      const id = el.getAttribute("data-id");
+      const deal = getDeal();
+
+      if(act==="goto"){
+        location.hash = el.getAttribute("data-route");
+        return;
+      }
+
+      if(act==="selectCov"){
+        const cid = el.getAttribute("data-id");
+        App.state.selectedCovenantId = cid;
+        // If clicked from other pages, jump to covenants
+        if(!location.hash.startsWith("#/covenants")) location.hash = "#/covenants";
+        else render();
+        setContext(`Selected covenant: ${deal.covenantSet.find(c=>c.id===cid)?.name || cid}\n\nActions:\n- Configure\n- Open Trace\n- Duplicate / Disable\n- Request approval`);
+        return;
+      }
+
+      if(act==="openCovConfig"){
+        App.state.selectedCovenantId = id;
+        App.state.covConfigTab = "Inputs & Definitions";
+        render();
+        toast("Opened covenant config");
+        return;
+      }
+
+      if(act==="setCovStudioTab"){
+        App.state.covStudioTab = el.getAttribute("data-tab");
+        render();
+        return;
+      }
+      if(act==="setCovConfigTab"){
+        App.state.covConfigTab = el.getAttribute("data-tab");
+        render();
+        return;
+      }
+
+      if(act==="openMetricTrace"){
+        const mid = id;
+        const m = deal.metrics.find(x=>x.id===mid);
+        if(!m){ toast("Metric not found"); return; }
+        setContext(
+`TRACE: ${m.name} (${m.unit})
+Sources:
+- ${m.trace.sources.join("\n- ")}
+
+Steps:
+${m.trace.steps.map(s=>`${s[0].padEnd(32)} ${typeof s[1]==="number" ? s[1] : s[1]}`).join("\n")}
+
+Actions:
+- Attach evidence
+- Create override (approval)
+- Compare vs previous run`
+        );
+        toast("Opened metric trace (right panel)");
+        return;
+      }
+
+      if(act==="openTraceForCov"){
+        const cid = id;
+        const c = deal.covenantSet.find(x=>x.id===cid);
+        if(!c){ toast("Covenant not found"); return; }
+        const deps = c.dependencies.map(mid=>deal.metrics.find(m=>m.id===mid)?.name || mid);
+        setContext(
+`COVENANT TRACE: ${c.name}
+Formula: ${c.formula}
+Dependencies:
+- ${deps.join("\n- ")}
+
+Headroom (Base/Downside/Severe):
+- ${c.headroom.base}
+- ${c.headroom.downside}
+- ${c.headroom.severe}
+
+Actions:
+- Open metric traces
+- Open DAG
+- Request approval
+- Add override (approval)`
+        );
+        toast("Opened covenant trace (right panel)");
+        return;
+      }
+
+      if(act==="openDependencies"){
+        App.state.covStudioTab = "graph";
+        App.state.selectedCovenantId = id;
+        location.hash = "#/covenants";
+        toast("Opened dependency graph");
+        return;
+      }
+
+      if(act==="previewTemplate"){
+        const tpl = deal.covenantLibrary.find(t=>t.id===id);
+        setContext(
+`TEMPLATE PREVIEW: ${tpl?.name}
+Type: ${tpl?.type}
+Requires: ${tpl?.requires?.join(", ")}
+Frequency: ${tpl?.freq}
+Complexity: ${tpl?.complexity}
+
+Actions:
+- Add to deal
+- Configure definitions after adding`
+        );
+        toast("Template preview (right panel)");
+        return;
+      }
+
+      if(act==="addTemplate"){
+        const tpl = deal.covenantLibrary.find(t=>t.id===id);
+        if(!tpl){ toast("Template not found"); return; }
+        // naive: add a covenant instance
+        const newId = "cov_" + Math.random().toString(16).slice(2,8);
+        const newCov = {
+          id:newId,
+          name: tpl.name + " (New)",
+          type: tpl.type,
+          status: "Draft",
+          freq: tpl.freq.includes("Quarter") ? "Quarterly" : tpl.freq.includes("Month") ? "Monthly" : "Quarterly",
+          nextTest: "2026-03-31",
+          thresholdSchedule: [{ effective: App.state.asOf, threshold: 0 }],
+          definitionPackage: "Standard",
+          metricRefs: [],
+          formula: "TBD",
+          headroom: { base: 0, downside: 0, severe: 0 },
+          risk:"OK",
+          dependencies:[]
+        };
+        deal.covenantSet.push(newCov);
+        App.state.selectedCovenantId = newId;
+        toast("Added covenant as Draft");
+        render();
+        return;
+      }
+
+      if(act==="editCovField"){
+        const cid = el.getAttribute("data-id");
+        const field = el.getAttribute("data-field");
+        const cov = deal.covenantSet.find(c=>c.id===cid);
+        cov[field] = el.value;
+        toast(`Updated ${field}`);
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="editCovFieldInput"){
+        const cid = el.getAttribute("data-id");
+        const field = el.getAttribute("data-field");
+        const cov = deal.covenantSet.find(c=>c.id===cid);
+        cov[field] = el.value;
+        toast(`Updated ${field}`);
+        return;
+      }
+
+      if(act==="saveDraftCov"){
+        toast("Saved draft (demo)");
+        setContext("Saved draft.\n\nNext actions:\n- Request approval\n- Run Calc\n- Publish deal version");
+        return;
+      }
+
+      if(act==="requestApprovalCov"){
+        toast("Sent for approval (demo)");
+        deal.approvalsQueue.push({
+          id:"appr_" + Math.random().toString(16).slice(2,8),
+          type:"Covenant Change",
+          status:"Pending",
+          item:"Update covenant: " + (deal.covenantSet.find(c=>c.id===id)?.name||id),
+          requestedBy:"You",
+          impact:"Definition change",
+          window:"Effective " + App.state.asOf,
+          reason:"User requested change",
+          evidence:["Draft config"]
+        });
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="duplicateCov"){
+        const c = deal.covenantSet.find(x=>x.id===id);
+        if(!c) return;
+        const copy = JSON.parse(JSON.stringify(c));
+        copy.id = "cov_" + Math.random().toString(16).slice(2,8);
+        copy.name = c.name + " (Copy)";
+        copy.status = "Draft";
+        deal.covenantSet.push(copy);
+        App.state.selectedCovenantId = copy.id;
+        toast("Duplicated covenant as Draft");
+        render();
+        return;
+      }
+
+      if(act==="toggleCov"){
+        const c = deal.covenantSet.find(x=>x.id===id);
+        if(!c) return;
+        c.status = (c.status==="Disabled") ? "Active" : "Disabled";
+        toast(`Covenant is now ${c.status}`);
+        render();
+        return;
+      }
+
+      if(act==="addThresholdRow"){
+        const c = deal.covenantSet.find(x=>x.id===id);
+        const eff = document.getElementById("newEff")?.value || App.state.asOf;
+        const thr = parseFloat(document.getElementById("newThr")?.value || "0");
+        c.thresholdSchedule.push({ effective: eff, threshold: thr });
+        toast("Added threshold row");
+        render();
+        return;
+      }
+
+      if(act==="removeThresholdRow"){
+        const c = deal.covenantSet.find(x=>x.id===id);
+        const idx = parseInt(el.getAttribute("data-idx"),10);
+        c.thresholdSchedule.splice(idx,1);
+        toast("Removed threshold row");
+        render();
+        return;
+      }
+
+      if(act==="requestWaiver"){
+        toast("Waiver requested (demo)");
+        return;
+      }
+
+      if(act==="attachEvidence"){
+        toast("Attach evidence (demo)");
+        setContext("Attach evidence:\n- Upload compliance cert\n- Upload borrower submission\n- Link credit agreement sections\n\n(Implement with object storage + signed URLs)");
+        return;
+      }
+
+      if(act==="recalcNow"){
+        document.getElementById("runCalcBtn")?.click();
+        return;
+      }
+
+      if(act==="bulkEdit"){
+        toast("Bulk edit (demo placeholder)");
+        setContext("Bulk Edit Actions:\n- Change frequency\n- Change next test date rule\n- Enable/disable set\n- Assign owners\n- Apply step-down schedule template");
+        return;
+      }
+
+      if(act==="reorderCov"){
+        toast("Reorder (demo placeholder)");
+        setContext("Reorder Actions:\n- Drag/drop order\n- Persist order for reporting pack sections");
+        return;
+      }
+
+      if(act==="impactPreview"){
+        toast("Impact preview (demo)");
+        setContext("Impact Preview:\nChange: EBITDA addbacks cap 25% → 20%\nImpacted:\n- Leverage Ratio\n- FCCR\n- Springing Leverage\n\n(Implement: dependency traversal over DAG + diff engine)");
+        return;
+      }
+
+      if(act==="autoLayout"){
+        toast("Auto-layout (demo)");
+        return;
+      }
+
+      if(act==="uploadCollateral"){
+        toast("Upload collateral report (demo)");
+        setContext("Upload Collateral Actions:\n- Upload Excel/CSV\n- Map columns\n- Validate totals\n- Create BB snapshot\n- Trigger calc pipeline");
+        return;
+      }
+
+      if(act==="runBB"){
+        toast("Borrowing Base re-calculated (demo)");
+        return;
+      }
+
+      if(act==="addReserve"){
+        toast("Reserve override created (pending approval)");
+        deal.approvalsQueue.push({
+          id:"appr_" + Math.random().toString(16).slice(2,8),
+          type:"Override",
+          status:"Pending",
+          item:"Reserve Override (BB)",
+          requestedBy:"You",
+          impact:"Availability -$0.5MM",
+          window:"Effective " + App.state.asOf,
+          reason:"Demo reserve addition",
+          evidence:["BB rationale note"]
+        });
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="openBBTrace"){
+        const bb = deal.borrowingBase;
+        setContext(
+`BB TRACE (as-of ${bb.asOf})
+Waterfall:
+${bb.waterfall.map(s=>`${s[0].padEnd(26)} ${s[1]}`).join("\n")}
+
+Actions:
+- Drill ineligibles (invoice/customer)
+- Override eligibility (approval)
+- Add reserves (approval)
+- Publish BB certificate`
+        );
+        toast("Opened BB trace (right panel)");
+        return;
+      }
+
+      if(act==="bbStepExplain"){
+        const step = el.getAttribute("data-step");
+        setContext(`BB Step Explain: ${step}\n\nActions:\n- Show underlying line-items\n- Show applied rule set version\n- Show overrides affecting this step`);
+        toast("Explained BB step (right panel)");
+        return;
+      }
+
+      if(act==="drillIneligibles"){
+        const idx = parseInt(el.getAttribute("data-idx"),10);
+        const item = deal.borrowingBase.ineligibles[idx];
+        setContext(
+`INELIGIBLE DRILLDOWN: ${item.reason}
+Amount: ${item.amount}MM
+Items:
+- ${item.drill.join("\n- ")}
+
+Actions:
+- Export list
+- Create exception/override (approval)
+- Attach evidence`
+        );
+        toast("Opened drilldown (right panel)");
+        return;
+      }
+
+      if(act==="overrideEligibility"){
+        toast("Eligibility override requested (pending approval)");
+        deal.approvalsQueue.push({
+          id:"appr_" + Math.random().toString(16).slice(2,8),
+          type:"Override",
+          status:"Pending",
+          item:"Eligibility Override: " + deal.borrowingBase.ineligibles[parseInt(el.getAttribute("data-idx"),10)].reason,
+          requestedBy:"You",
+          impact:"Availability +$0.3MM",
+          window:"Effective " + App.state.asOf,
+          reason:"Demo eligibility override",
+          evidence:["Customer confirmation"]
+        });
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="setStressTab"){
+        App.state.stressTab = el.getAttribute("data-tab");
+        render();
+        return;
+      }
+
+      if(act==="selectScenario"){
+        App.state.scenarioId = id;
+        toast("Scenario selected");
+        render();
+        return;
+      }
+
+      if(act==="editDriver"){
+        const field = el.getAttribute("data-field");
+        const sc = getScenario();
+        sc.drivers[field] = parseFloat(el.value);
+        // update inline text by rerender
+        render();
+        toast(`Driver updated: ${field}`);
+        return;
+      }
+
+      if(act==="runScenario"){
+        const sc = getScenario();
+        toast(`Scenario run started: ${sc.name} (demo)`);
+        // demo: no numeric engine, just marks lastRunAt + bumps deal status indicator
+        getDeal().lastRunAt = new Date().toISOString().slice(0,19).replace("T"," ");
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="saveScenario"){
+        toast("Scenario saved (demo)");
+        return;
+      }
+
+      if(act==="requestScenarioApproval"){
+        const sc = getScenario();
+        sc.status = "PENDING_APPROVAL";
+        toast("Scenario sent for approval (demo)");
+        render();
+        return;
+      }
+
+      if(act==="newScenario"){
+        const deal = getDeal();
+        const newSc = {
+          id:"sc_" + Math.random().toString(16).slice(2,8),
+          name:"Custom " + (deal.stress.scenarios.length+1),
+          status:"DRAFT",
+          type:"Driver-based",
+          drivers:{ ebitdaShockPct:-10, rateShockBps:150, dsoDays:6, dilutionPct:1.0, invHaircutPct:5 },
+          results: deal.stress.scenarios[0].results // reuse base results for demo
+        };
+        deal.stress.scenarios.push(newSc);
+        App.state.scenarioId = newSc.id;
+        toast("Created new scenario (demo)");
+        render();
+        return;
+      }
+
+      if(act==="cloneScenario"){
+        const deal = getDeal();
+        const sc = getScenario();
+        const copy = JSON.parse(JSON.stringify(sc));
+        copy.id = "sc_" + Math.random().toString(16).slice(2,8);
+        copy.name = sc.name + " (Copy)";
+        copy.status = "DRAFT";
+        deal.stress.scenarios.push(copy);
+        App.state.scenarioId = copy.id;
+        toast("Cloned scenario (demo)");
+        render();
+        return;
+      }
+
+      if(act==="deleteScenario"){
+        const deal = getDeal();
+        if(deal.stress.scenarios.length<=1){ toast("Cannot delete last scenario"); return; }
+        const idx = deal.stress.scenarios.findIndex(s=>s.id===id);
+        if(idx>=0){
+          deal.stress.scenarios.splice(idx,1);
+          App.state.scenarioId = deal.stress.scenarios[0].id;
+          toast("Deleted scenario (demo)");
+          render();
+        }
+        return;
+      }
+
+      if(act==="heatmapCell"){
+        const covId = el.getAttribute("data-cov");
+        const idx = parseInt(el.getAttribute("data-idx"),10);
+        const hz = getDeal().stress.horizons[idx];
+        const c = getDeal().covenantSet.find(x=>x.id===covId);
+        setContext(
+`HEATMAP CELL
+Scenario: ${getScenario().name}
+Period: ${hz}
+Covenant: ${c?.name}
+
+Actions:
+- Open trace for this period
+- Show drivers contributing (tornado)
+- Open BB under stress`
+        );
+        toast("Heatmap cell selected");
+        return;
+      }
+
+      if(act==="exportScenario"){
+        toast("Export scenario pack (demo)");
+        return;
+      }
+
+      if(act==="microStress"){
+        // just a UI event; no action
+        return;
+      }
+
+      if(act==="applyMicroStress"){
+        toast("Applied micro-stress (demo — no engine)");
+        setContext("Micro-stress applied (demo).\n\nIn production:\n- Apply deltas to drivers\n- Recompute dependent metrics\n- Recompute covenant headroom\n- Highlight impacted DAG nodes");
+        return;
+      }
+
+      if(act==="resetMicroStress"){
+        toast("Reset micro-stress (demo)");
+        return;
+      }
+
+      if(act==="comparePeriods"){
+        toast("Computed what-changed (demo)");
+        setContext("What changed vs last period:\n- Net Debt +4.2MM\n- EBITDA -1.8MM\n- Excess Availability -2.6%\n\n(Implement: delta attribution engine)");
+        return;
+      }
+
+      if(act==="saveReportConfig"){
+        toast("Saved reporting config (demo)");
+        return;
+      }
+
+      if(act==="moveSectionUp" || act==="moveSectionDown"){
+        const idx = parseInt(el.getAttribute("data-idx"),10);
+        const deal = getDeal();
+        const tpl = deal.reporting.templates.find(t=>t.id===App.state.selectedReportTemplateId);
+        const newIdx = act==="moveSectionUp" ? idx-1 : idx+1;
+        if(newIdx<0 || newIdx>=tpl.sections.length) return;
+        const tmp = tpl.sections[idx];
+        tpl.sections[idx] = tpl.sections[newIdx];
+        tpl.sections[newIdx] = tmp;
+        render();
+        toast("Reordered section");
+        return;
+      }
+
+      if(act==="generateDraftReport"){
+        toast("Generated draft report (demo)");
+        return;
+      }
+
+      if(act==="sendReportApproval"){
+        toast("Sent report for approval (demo)");
+        getDeal().approvalsQueue.push({
+          id:"appr_" + Math.random().toString(16).slice(2,8),
+          type:"Report",
+          status:"Pending",
+          item:"Report Pack Approval",
+          requestedBy:"You",
+          impact:"Publish report version",
+          window:"Now",
+          reason:"Ready to publish",
+          evidence:["Draft pack preview"]
+        });
+        renderTopbarSelectors();
+        return;
+      }
+
+      if(act==="publishReport"){
+        const deal = getDeal();
+        const tpl = deal.reporting.templates.find(t=>t.id===App.state.selectedReportTemplateId);
+        deal.reporting.publishedReports.push({
+          id:"rep_" + Math.random().toString(16).slice(2,8),
+          name: tpl.name,
+          publishedAt: new Date().toISOString().slice(0,19).replace("T"," "),
+          scenarios: [...App.state.reportScenarioSet],
+          sections: [...tpl.sections]
+        });
+        toast("Published report version (demo)");
+        renderTopbarSelectors();
+        render();
+        return;
+      }
+
+      if(act==="copyJson"){
+        navigator.clipboard.writeText(JSON.stringify(getDeal(), null, 2)).then(()=>toast("Copied JSON"));
+        return;
+      }
+
+      if(act==="downloadJson"){
+        const blob = new Blob([JSON.stringify(getDeal(), null, 2)], {type:"application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${getDeal().name.replaceAll(" ","_")}_deal.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast("Downloaded JSON");
+        return;
+      }
+
+      if(act==="validateJson"){
+        toast("JSON validation OK (demo)");
+        return;
+      }
+
+      if(act==="openApproval"){
+        const item = getDeal().approvalsQueue.find(x=>x.id===id);
+        setContext(
+`APPROVAL DETAIL
+Type: ${item.type}
+Item: ${item.item}
+Status: ${item.status}
+Impact: ${item.impact}
+Window: ${item.window}
+Reason: ${item.reason}
+Evidence:
+- ${item.evidence.join("\n- ")}
+
+Actions:
+- Approve / Reject
+- Request changes
+- Attach more evidence`
+        );
+        toast("Opened approval detail (right panel)");
+        return;
+      }
+
+      if(act==="approveItem"){
+        const item = getDeal().approvalsQueue.find(x=>x.id===id);
+        item.status = "Approved";
+        toast("Approved");
+        renderTopbarSelectors();
+        render();
+        return;
+      }
+
+      if(act==="rejectItem"){
+        const item = getDeal().approvalsQueue.find(x=>x.id===id);
+        item.status = "Rejected";
+        toast("Rejected");
+        renderTopbarSelectors();
+        render();
+        return;
+      }
+
+      // default
+      console.log("Unhandled action", act, id);
+    };
+  });
+}
+
+/** ---------------------------------------------------------
+ *  Topbar handlers
+ *  --------------------------------------------------------- */
+document.getElementById("dealSelect").addEventListener("change", e=>{
+  App.state.dealId = e.target.value;
+  const deal = getDeal();
+  App.state.facilityId = deal.facilities[0].id;
+  App.state.asOf = deal.asOfPeriods[deal.asOfPeriods.length-1];
+  App.state.scenarioId = deal.stress.scenarios[0].id;
+  App.state.selectedCovenantId = deal.covenantSet[0].id;
+  toast("Deal changed");
+  render();
+});
+
+document.getElementById("facilitySelect").addEventListener("change", e=>{
+  App.state.facilityId = e.target.value;
+  toast("Facility changed");
+  render();
+});
+
+document.getElementById("asofSelect").addEventListener("change", e=>{
+  App.state.asOf = e.target.value;
+  toast("As-of changed");
+  render();
+});
+
+document.getElementById("scenarioSelect").addEventListener("change", e=>{
+  App.state.scenarioId = e.target.value;
+  toast("Scenario changed");
+  render();
+});
+
+document.getElementById("runCalcBtn").addEventListener("click", ()=>{
+  const deal = getDeal();
+  deal.lastRunAt = new Date().toISOString().slice(0,19).replace("T"," ");
+  toast("Run Calc completed (demo)");
+  renderTopbarSelectors();
+  setContext(
+`RUN CALC (demo)
+Pipeline stages:
+1) Validate snapshots (FS, BB)
+2) Compute metrics (EBITDA, Net Debt, Availability)
+3) Evaluate covenants (thresholds + springing logic)
+4) Persist trace + audit events
+
+(Here we only update lastRunAt.)`
+  );
+});
+
+document.getElementById("publishBtn").addEventListener("click", ()=>{
+  const deal = getDeal();
+  deal.status = "PUBLISHED";
+  toast("Deal published (demo)");
+  renderTopbarSelectors();
+});
+
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  toast("Export (demo): use Reporting page for packs");
+  location.hash = "#/reporting";
+});
+
+/** ---------------------------------------------------------
+ *  Boot
+ *  --------------------------------------------------------- */
+window.addEventListener("hashchange", render);
+if(!location.hash) location.hash = "#/overview";
+render();
+</script>
+</body>
+</html>
