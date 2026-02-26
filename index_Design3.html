@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Borrowing Base Studio — Doc → Template → Modules → BB Report (Mock UI)</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111826; --panel2:#0f1623;
+      --text:#e6edf3; --muted:#9fb0c0; --line:#223047;
+      --accent:#4aa3ff; --good:#42d392; --warn:#ffcc00; --bad:#ff5c5c;
+      --shadow: 0 12px 32px rgba(0,0,0,.35);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family:var(--sans);
+      background: radial-gradient(1200px 700px at 20% 10%, #13223b 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; gap:10px; align-items:center;
+      padding:12px 14px;
+      background: rgba(10,14,20,0.78);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .topbar .title{ font-weight:800; letter-spacing:.2px; }
+    .spacer{ flex:1; }
+    .pill{
+      display:flex; gap:8px; align-items:center;
+      padding:8px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    select, input[type="text"], input[type="number"], textarea{
+      background: rgba(17,24,38,0.75);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding:8px 10px;
+      outline:none;
+    }
+    textarea{ width:100%; min-height: 160px; resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.35; }
+    .btn{
+      padding:9px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(74,163,255,0.35);
+      background: linear-gradient(180deg, rgba(74,163,255,0.22), rgba(74,163,255,0.08));
+      color: var(--text);
+      cursor:pointer;
+    }
+    .btn:hover{ filter: brightness(1.06); }
+    .btn.secondary{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+    }
+    .btn.danger{
+      border: 1px solid rgba(255,92,92,0.35);
+      background: linear-gradient(180deg, rgba(255,92,92,0.22), rgba(255,92,92,0.10));
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 340px minmax(520px, 1fr) 440px;
+      gap:12px;
+      padding:12px;
+      align-items:start;
+    }
+    @media (max-width: 1200px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: rgba(17,24,38,0.70);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:12px;
+      min-width:0;
+    }
+    h2{ margin:0 0 10px; font-size:18px; }
+    h3{ margin:0 0 10px; font-size:14px; color: var(--muted); text-transform: uppercase; letter-spacing: .10em; }
+    .subtle{ color: var(--muted); font-size: 13px; }
+    .divider{ height:1px; background: rgba(255,255,255,0.08); margin:10px 0; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row.between{ justify-content:space-between; }
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .chip.good{ background: rgba(66,211,146,0.12); border-color: rgba(66,211,146,0.22); color: #bff3df; }
+    .chip.warn{ background: rgba(255,204,0,0.12); border-color: rgba(255,204,0,0.22); color: #ffe9a0; }
+    .chip.bad{ background: rgba(255,92,92,0.12); border-color: rgba(255,92,92,0.22); color: #ffb3b3; }
+    .small{ font-size: 12px; color: var(--muted); }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow:hidden;
+    }
+    th, td{
+      padding: 8px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+    th{ color: var(--muted); font-weight:650; }
+    tr:hover td{ background: rgba(255,255,255,0.04); }
+
+    .module{
+      background: rgba(15,22,35,0.65);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .kpi{
+      padding:10px; border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .kpi .v{ font-size: 18px; font-weight:800; }
+    .kpi .l{ font-size: 12px; color: var(--muted); margin-top:2px; }
+
+    .monoBox{
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      line-height: 1.35;
+      color: #cfe0f0;
+      background: rgba(15,22,35,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .linkBtn{
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      padding: 6px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      color: var(--text);
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .linkBtn:hover{ background: rgba(255,255,255,0.09); }
+
+    .step{
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .stepTitle{
+      font-weight:800;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .stepBody{ margin-top: 8px; }
+
+    .drillHeader{
+      position: sticky;
+      top: 0;
+      background: rgba(17,24,38,0.80);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 10px;
+      margin-bottom: 10px;
+      z-index: 2;
+    }
+    .stack{
+      display:flex; flex-direction:column; gap:10px;
+      max-height: calc(100vh - 190px);
+      overflow:auto;
+      padding-right:2px;
+    }
+    .panel{
+      background: rgba(15,22,35,0.75);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .toast{
+      position: fixed;
+      bottom: 16px; right: 16px;
+      max-width: 560px;
+      padding: 10px 12px;
+      background: rgba(17,24,38,0.90);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index: 50;
+    }
+    .toast.show{ display:block; animation: pop 180ms ease-out; }
+    @keyframes pop { from{ transform: translateY(8px); opacity: 0; } to{ transform: translateY(0); opacity: 1; } }
+
+    .tag{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: #cfe0f0;
+      white-space:nowrap;
+    }
+    .quoteModal{
+      position: fixed; inset:0;
+      display:none;
+      background: rgba(0,0,0,0.5);
+      z-index: 60;
+      align-items:center; justify-content:center;
+      padding: 16px;
+    }
+    .quoteModal.show{ display:flex; }
+    .quoteInner{
+      width: min(920px, 96vw);
+      max-height: 86vh;
+      overflow:auto;
+      background: rgba(17,24,38,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .quoteInner .hdr{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom: 10px;
+    }
+    .quoteInner pre{
+      margin:0;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      color: #d6e6f7;
+      background: rgba(15,22,35,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .tiny{ font-size: 11px; color: rgba(230,237,243,0.55); }
+    .applyBar{
+      position: sticky;
+      bottom: 0;
+      background: rgba(17,24,38,0.88);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 10px;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+    .okMark{ color: var(--good); font-weight: 800; }
+    .warnMark{ color: var(--warn); font-weight: 800; }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="title">Borrowing Base Studio — Doc → Template → Modules → BB Report (Mock)</div>
+
+    <div class="pill"><span class="small">Deal</span><select id="dealSelect"></select></div>
+    <div class="pill"><span class="small">Facility</span><select id="facilitySelect"></select></div>
+    <div class="pill"><span class="small">Pool</span><select id="poolSelect"></select></div>
+    <div class="pill"><span class="small">As-of</span><select id="asofSelect"></select></div>
+
+    <div class="spacer"></div>
+
+    <button class="btn secondary" id="validateBtn">Validate</button>
+    <button class="btn" id="runBtn">Run</button>
+    <button class="btn secondary" id="exportBtn">Export</button>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: DOC INTAKE + TEMPLATE -->
+    <aside class="card" id="leftPanel"></aside>
+
+    <!-- CENTER: MODULE TABLES -->
+    <section class="card" id="centerPanel"></section>
+
+    <!-- RIGHT: BB REPORT + DRILL STACK -->
+    <aside class="card" id="rightPanel"></aside>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="quoteModal" id="quoteModal">
+    <div class="quoteInner">
+      <div class="hdr">
+        <div>
+          <div style="font-weight:800;" id="quoteTitle">Citation</div>
+          <div class="tiny" id="quoteMeta">Clause reference</div>
+        </div>
+        <button class="btn secondary" id="closeQuoteBtn">Close</button>
+      </div>
+      <pre id="quoteText"></pre>
+    </div>
+  </div>
+
+<script>
+/* -----------------------------
+   Data (mock)
+------------------------------ */
+const DB = {
+  deals: [
+    {
+      id: "deal_acme",
+      name: "ACME MM Loan",
+      facilities: [{ id:"fac_rev", name:"Revolver A", commitmentMM: 25.0, currency:"USD" }],
+      pools: ["Loans"],
+      asOf: ["2025-12-31", "2026-01-31"],
+
+      templates: [
+        { id:"tpl_mm_loans_v1", name:"Borrowing Base — MM Loans v1", desc:"Lien-based AR + obligor/industry concentration + rating/lien/domicile eligibility" },
+        { id:"tpl_abl_ar_v1", name:"Borrowing Base — ABL AR v1", desc:"AR aging eligibility + dilution/chargeback + customer concentration" },
+        { id:"tpl_custom", name:"Custom", desc:"Start blank and build rules manually" }
+      ],
+      templateLibrary: [
+        { id:"tpl_mm_loans_v1", patterns:["lien", "advance rate", "obligor concentration", "industry concentration", "rating eligibility"] },
+        { id:"tpl_abl_ar_v1", patterns:["accounts receivable", "eligible accounts", "dilution", "chargeback", "concentration"] }
+      ],
+
+      // Agreement input
+      agreementText: "",
+      extraction: null,          // populated after "Extract Terms"
+      templateRecommendation: null, // populated after "Extract Terms"
+
+      // Rule tables
+      eligibilityRules: [],
+      advanceRateRules: [],
+      concentrationRules: [],
+      reserves: [],
+
+      // Demo breakdown data (drill)
+      breakdown: {
+        poolTotalMM: 100.0,
+        eligibilityIneligiblesByTag: [
+          { tag:"INEL_SANCT", category:"Domicile", amountMM:3.2, count:8 },
+          { tag:"INEL_NO_RT", category:"Rating", amountMM:2.0, count:14 },
+          { tag:"INEL_UNSEC", category:"Lien", amountMM:1.1, count:6 },
+          { tag:"OTHER_INEL", category:"Other", amountMM:11.7, count:19 }
+        ],
+        eligibilitySamples: {
+          "INEL_SANCT": [
+            { obligor:"XYZ Ltd", exposure:"LN-1088", balMM:0.6, country:"RU", rating:"—", lien:"1st", evidence:"Sanctions screen", override:"—" },
+            { obligor:"Omega SA", exposure:"LN-1094", balMM:0.4, country:"IR", rating:"—", lien:"1st", evidence:"Sanctions screen", override:"—" }
+          ],
+          "INEL_UNSEC": [
+            { obligor:"QRS Inc", exposure:"LN-1020", balMM:0.3, country:"US", rating:"B", lien:"Unsecured", evidence:"Loan docs", override:"Requested" }
+          ]
+        },
+        advanceAttribution: [
+          { segmentType:"Lien Type", segmentKey:"1st lien", eligibleMM:40.0, arPct:70, advancedMM:28.0 },
+          { segmentType:"Rating Bucket", segmentKey:"BB+ ", eligibleMM:20.0, arPct:75, advancedMM:15.0 },
+          { segmentType:"Industry", segmentKey:"Oil & Gas", eligibleMM:10.0, arPct:55, advancedMM:5.5 },
+          { segmentType:"Other", segmentKey:"Other", eligibleMM:12.0, arPct:80, advancedMM:9.6 }
+        ],
+        concSummary: [
+          { tag:"CONC_OBL_20", type:"Obligor", appliesTo:"Advanced", limit:"20%", cutMM:3.1, breaches:1 },
+          { tag:"CONC_IND_25", type:"Industry", appliesTo:"Advanced", limit:"25%", cutMM:1.4, breaches:2 },
+          { tag:"CONC_RT_LOW", type:"Rating", appliesTo:"Eligible", limit:"30%(<=B)", cutMM:0.9, breaches:1 }
+        ]
+      },
+
+      quotes: {
+        "§2.1(a)": `Eligibility — Domicile
+"Eligible Loan" means a Loan with an Obligor organized in the United States or Canada...`,
+        "§2.1(f)": `Sanctions
+No Obligor may be a Sanctioned Person; any such exposure shall be ineligible...`,
+        "§2.1(c)": `Rating Eligibility
+Each Eligible Loan shall have a Rating of at least B- (or equivalent)...`,
+        "§2.1(d)": `Lien Eligibility
+Each Eligible Loan shall be secured by a first or second priority perfected lien...`,
+        "Schedule 1": `Advance Rates
+First Lien Eligible Loans: 70%
+Second Lien Eligible Loans: 55%
+Industry Haircut (Oil & Gas): 55% and an aggregate cap of $10MM...`,
+        "§2.3(a)": `Obligor Concentration
+No single Obligor shall exceed 20% of the Advanced Amount...`,
+        "§2.3(b)": `Industry Concentration
+No Industry shall exceed 25% of the Advanced Amount...`,
+        "§2.3(c)": `Rating Concentration
+Loans rated <=B shall not exceed 30% of Eligible Balance...`
+      }
+    }
+  ]
+};
+
+const App = {
+  state: {
+    dealId: DB.deals[0].id,
+    facilityId: DB.deals[0].facilities[0].id,
+    pool: DB.deals[0].pools[0],
+    asOf: DB.deals[0].asOf[DB.deals[0].asOf.length-1],
+    drillStack: []
+  }
+};
+
+function getDeal(){ return DB.deals.find(d => d.id === App.state.dealId); }
+function getFacility(){ return getDeal().facilities.find(f => f.id === App.state.facilityId); }
+
+function esc(s){
+  return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function fmtMM(n, ccy="USD"){ return `${ccy} ${Number(n).toFixed(1)}MM`; }
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"), 2200);
+}
+
+/* -----------------------------
+   Mock extraction + template selection
+------------------------------ */
+function extractTermsFromAgreement(text){
+  // Mock: pretend extraction based on keywords
+  const t = text.toLowerCase();
+  const hasLien = t.includes("lien") || t.includes("first lien") || t.includes("second lien");
+  const hasAdvance = t.includes("advance") || t.includes("advance rate");
+  const hasOblConc = t.includes("obligor") && t.includes("concentration");
+  const hasIndConc = t.includes("industry") && t.includes("concentration");
+  const hasRatingElig = t.includes("rating") && (t.includes("eligible") || t.includes("b-") || t.includes("b"));
+
+  // Build extracted terms with confidence + clause refs
+  const extracted = {
+    bbType: { value: "Loans-based BB", conf: 0.91, clause: "§2.0" },
+    eligibility: [
+      { label:"Domicile allowed", value:"US, Canada", conf: 0.82, clause:"§2.1(a)", accepted:true },
+      { label:"Sanctions exclusion", value:"Yes", conf: 0.93, clause:"§2.1(f)", accepted:true },
+      { label:"Minimum rating", value:"B-", conf: 0.74, clause:"§2.1(c)", accepted:true },
+      { label:"Lien eligibility", value:"1st lien, 2nd lien (perfected)", conf: 0.88, clause:"§2.1(d)", accepted:true }
+    ],
+    advanceRates: [
+      { label:"First lien AR", value:"70%", conf: 0.90, clause:"Schedule 1", accepted:true },
+      { label:"Second lien AR", value:"55%", conf: 0.77, clause:"Schedule 1", accepted:true },
+      { label:"Oil & Gas haircut/cap", value:"55% and $10MM cap", conf: 0.62, clause:"Schedule 1", accepted:true }
+    ],
+    concentrations: [
+      { label:"Top obligor cap", value:"20% of Advanced Amount", conf: 0.89, clause:"§2.3(a)", accepted:true },
+      { label:"Industry cap", value:"25% of Advanced Amount", conf: 0.83, clause:"§2.3(b)", accepted:true },
+      { label:"Low rating cap", value:"30% of Eligible (<=B)", conf: 0.71, clause:"§2.3(c)", accepted:true }
+    ],
+    reserves: [
+      { label:"Fees reserve", value:"Permitted (flat/discretionary)", conf: 0.58, clause:"§2.4", accepted:true }
+    ]
+  };
+
+  // Template selection (mock)
+  let rec = { templateId:"tpl_custom", name:"Custom", conf: 0.40, why:["Insufficient signals"] };
+  if(hasLien && hasAdvance && (hasOblConc || hasIndConc) && hasRatingElig){
+    rec = {
+      templateId:"tpl_mm_loans_v1",
+      name:"Borrowing Base — MM Loans v1",
+      conf: 0.88,
+      why:[
+        "Detected lien-based advance rates",
+        "Detected obligor/industry concentration language",
+        "Detected rating eligibility threshold"
+      ],
+      alternatives:[
+        { templateId:"tpl_abl_ar_v1", name:"Borrowing Base — ABL AR v1", conf: 0.41 },
+        { templateId:"tpl_custom", name:"Custom", conf: 0.29 }
+      ]
+    };
+  } else if(t.includes("accounts receivable") || t.includes("eligible accounts")){
+    rec = {
+      templateId:"tpl_abl_ar_v1", name:"Borrowing Base — ABL AR v1", conf: 0.84,
+      why:["Detected AR eligibility language (Eligible Accounts)"],
+      alternatives:[{ templateId:"tpl_mm_loans_v1", name:"Borrowing Base — MM Loans v1", conf: 0.34 }, { templateId:"tpl_custom", name:"Custom", conf: 0.22 }]
+    };
+  }
+
+  return { extracted, recommendation: rec };
+}
+
+/* -----------------------------
+   Apply extracted terms → module tables (mock)
+------------------------------ */
+function applyToModules(mode="draft"){
+  const deal = getDeal();
+  if(!deal.extraction){ toast("No extracted terms to apply"); return; }
+
+  const ex = deal.extraction;
+  const rec = deal.templateRecommendation;
+
+  // reset & apply
+  deal.eligibilityRules = [];
+  deal.advanceRateRules = [];
+  deal.concentrationRules = [];
+  deal.reserves = [];
+
+  // Eligibility
+  if(ex.eligibility.find(x=>x.label==="Domicile allowed" && x.accepted)){
+    deal.eligibilityRules.push(ruleRow("elig", {category:"Domicile", field:"Obligor Country", op:"IN", value:"US, Canada", missing:"Fail", action:"Include", tag:"ELIG_DOM", priority:10, enabled:true, source:"Agreement", conf:0.82, clause:"§2.1(a)"}));
+  }
+  if(ex.eligibility.find(x=>x.label==="Sanctions exclusion" && x.accepted)){
+    deal.eligibilityRules.push(ruleRow("elig", {category:"Domicile", field:"Obligor Country", op:"NOT IN", value:"Sanctions Set", missing:"Fail", action:"Exclude", tag:"INEL_SANCT", priority:1, enabled:true, source:"Agreement", conf:0.93, clause:"§2.1(f)"}));
+  }
+  if(ex.eligibility.find(x=>x.label==="Minimum rating" && x.accepted)){
+    deal.eligibilityRules.push(ruleRow("elig", {category:"Rating", field:"Rating", op:">=", value:"B-", missing:"Fail", action:"Include", tag:"ELIG_RT", priority:10, enabled:true, source:"Agreement", conf:0.74, clause:"§2.1(c)"}));
+  }
+  if(ex.eligibility.find(x=>x.label==="Lien eligibility" && x.accepted)){
+    deal.eligibilityRules.push(ruleRow("elig", {category:"Lien", field:"Lien Type", op:"IN", value:"1st lien, 2nd lien", missing:"Fail", action:"Include", tag:"ELIG_LIEN", priority:10, enabled:true, source:"Agreement", conf:0.88, clause:"§2.1(d)"}));
+  }
+
+  // Advance rates
+  if(ex.advanceRates.find(x=>x.label==="First lien AR" && x.accepted)){
+    deal.advanceRateRules.push(ruleRow("ar", {segmentType:"Lien Type", segmentKey:"1st lien", condition:"Rating >= B-", arPct:70, capType:"None", capValue:"—", priority:1, enabled:true, source:"Agreement", conf:0.90, clause:"Schedule 1"}));
+  }
+  if(ex.advanceRates.find(x=>x.label==="Second lien AR" && x.accepted)){
+    deal.advanceRateRules.push(ruleRow("ar", {segmentType:"Lien Type", segmentKey:"2nd lien", condition:"Rating >= B", arPct:55, capType:"None", capValue:"—", priority:2, enabled:true, source:"Agreement", conf:0.77, clause:"Schedule 1"}));
+  }
+  if(ex.advanceRates.find(x=>x.label==="Oil & Gas haircut/cap" && x.accepted)){
+    deal.advanceRateRules.push(ruleRow("ar", {segmentType:"Industry", segmentKey:"Oil & Gas", condition:"—", arPct:55, capType:"Absolute", capValue:"$10MM", priority:4, enabled:true, source:"Agreement", conf:0.62, clause:"Schedule 1"}));
+  }
+
+  // Concentrations
+  if(ex.concentrations.find(x=>x.label==="Top obligor cap" && x.accepted)){
+    deal.concentrationRules.push(ruleRow("conc", {type:"Obligor", groupBy:"Obligor", limitType:"% of Total", limitValue:"20%", appliesTo:"Advanced Amount", method:"Excess Cut", tag:"CONC_OBL_20", priority:1, enabled:true, source:"Agreement", conf:0.89, clause:"§2.3(a)"}));
+  }
+  if(ex.concentrations.find(x=>x.label==="Industry cap" && x.accepted)){
+    deal.concentrationRules.push(ruleRow("conc", {type:"Industry", groupBy:"Industry", limitType:"% of Total", limitValue:"25%", appliesTo:"Advanced Amount", method:"Excess Cut", tag:"CONC_IND_25", priority:2, enabled:true, source:"Agreement", conf:0.83, clause:"§2.3(b)"}));
+  }
+  if(ex.concentrations.find(x=>x.label==="Low rating cap" && x.accepted)){
+    deal.concentrationRules.push(ruleRow("conc", {type:"Rating", groupBy:"Rating Bucket", limitType:"% of Total", limitValue:"30% (<=B)", appliesTo:"Eligible Balance", method:"Haircut", tag:"CONC_RT_LOW", priority:3, enabled:true, source:"Agreement", conf:0.71, clause:"§2.3(c)"}));
+  }
+
+  // Reserves (demo)
+  if(ex.reserves?.length && ex.reserves[0].accepted){
+    deal.reserves.push(ruleRow("res", {type:"Bank Fees", amountMM:1.2, basis:"Flat", effective:App.state.asOf, expiry:"—", approval:"Pending", notes:"From agreement extraction", source:"Agreement", conf:0.58, clause:"§2.4"}));
+  }
+
+  toast(`Applied extracted terms to modules (${mode})`);
+  render();
+}
+
+/* helper: add id */
+function ruleRow(prefix, obj){
+  return { id: `${prefix}_${Math.random().toString(16).slice(2,8)}`, ...obj };
+}
+
+/* -----------------------------
+   Borrowing Base (demo)
+------------------------------ */
+function computeBB(){
+  const d = getDeal();
+  const ccy = getFacility().currency;
+  const total = d.breakdown.poolTotalMM;
+  const inel = d.breakdown.eligibilityIneligiblesByTag.reduce((a,x)=>a+x.amountMM,0);
+  const eligible = Math.max(total - inel, 0);
+  const grossAdv = d.breakdown.advanceAttribution.reduce((a,x)=>a+x.advancedMM,0);
+  const concCuts = d.breakdown.concSummary.reduce((a,x)=>a+x.cutMM,0);
+  const reserves = d.reserves.reduce((a,x)=>a+Number(x.amountMM||0),0);
+  const net = Math.max(grossAdv - concCuts - reserves, 0);
+  return { ccy, total, inel, eligible, grossAdv, concCuts, reserves, net };
+}
+
+/* -----------------------------
+   Render topbar selectors
+------------------------------ */
+function renderTopbar(){
+  const dealSel = document.getElementById("dealSelect");
+  dealSel.innerHTML = DB.deals.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("");
+  dealSel.value = App.state.dealId;
+
+  const facSel = document.getElementById("facilitySelect");
+  facSel.innerHTML = getDeal().facilities.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join("");
+  facSel.value = App.state.facilityId;
+
+  const poolSel = document.getElementById("poolSelect");
+  poolSel.innerHTML = getDeal().pools.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  poolSel.value = App.state.pool;
+
+  const asofSel = document.getElementById("asofSelect");
+  asofSel.innerHTML = getDeal().asOf.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
+  asofSel.value = App.state.asOf;
+
+  dealSel.onchange = e => { App.state.dealId = e.target.value; App.state.facilityId = getDeal().facilities[0].id; App.state.pool=getDeal().pools[0]; App.state.asOf=getDeal().asOf[getDeal().asOf.length-1]; App.state.drillStack=[]; render(); toast("Deal changed"); };
+  facSel.onchange  = e => { App.state.facilityId = e.target.value; render(); toast("Facility changed"); };
+  poolSel.onchange = e => { App.state.pool = e.target.value; render(); toast("Pool changed"); };
+  asofSel.onchange = e => { App.state.asOf = e.target.value; render(); toast("As-of changed"); };
+
+  document.getElementById("validateBtn").onclick = () => validateAll();
+  document.getElementById("runBtn").onclick = () => { toast("Run complete (demo)"); renderRightPanel(true); };
+  document.getElementById("exportBtn").onclick = () => exportJSON();
+}
+
+/* -----------------------------
+   Left panel: doc intake + extracted terms + template selection + review/apply
+------------------------------ */
+function renderLeft(){
+  const d = getDeal();
+  const bb = computeBB();
+
+  const rec = d.templateRecommendation;
+  const ex = d.extraction;
+
+  const templateOptions = d.templates.map(t=>`<option value="${t.id}" ${rec?.templateId===t.id?"selected":""}>${esc(t.name)}</option>`).join("");
+
+  const html = `
+    <h2>Doc Intake → Template</h2>
+    <div class="subtle">Paste relevant agreement sections. The system extracts BB terms, recommends a template, and can pre-fill modules with citations + confidence.</div>
+    <div class="divider"></div>
+
+    <div class="step">
+      <div class="stepTitle">1) Provide Credit Agreement Sections <span class="chip">Paste text</span></div>
+      <div class="stepBody">
+        <textarea id="agreementText" placeholder="Paste sections: eligibility, advance rates, concentration, reserves...">${esc(d.agreementText || "")}</textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" id="extractBtn">Extract Terms</button>
+          <button class="btn secondary" id="loadSampleBtn">Load Sample Text</button>
+          <button class="btn secondary" id="clearAgreementBtn">Clear</button>
+        </div>
+        <div class="tiny" style="margin-top:8px;">Tip: paste only the relevant schedules/clauses for faster, cleaner extraction.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepTitle">2) Extracted Terms (with citations) <span class="chip ${ex ? "good":"warn"}">${ex ? "Ready":"Not extracted"}</span></div>
+      <div class="stepBody">
+        ${ex ? renderExtractedTerms(ex) : `<div class="monoBox">No extraction yet. Click “Extract Terms”.</div>`}
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepTitle">3) Template Selection (Auto) <span class="chip ${rec ? "good":"warn"}">${rec ? "Recommended":"Pending"}</span></div>
+      <div class="stepBody">
+        ${rec ? `
+          <div class="row between">
+            <div>
+              <div><b>${esc(rec.name)}</b> <span class="chip">Confidence: ${Math.round(rec.conf*100)}%</span></div>
+              <div class="tiny">Why:</div>
+              <div class="monoBox">${esc(rec.why.map(x=>"- "+x).join("\n"))}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="small">Choose template</div>
+          <div class="row" style="margin-top:6px;">
+            <select id="templatePick" style="flex:1;">${templateOptions}</select>
+            <button class="btn secondary" id="acceptTemplateBtn">Use selection</button>
+          </div>
+          ${rec.alternatives?.length ? `
+            <div class="divider"></div>
+            <div class="small">Alternatives</div>
+            ${rec.alternatives.map(a=>`
+              <div class="row" style="margin-top:6px;">
+                <span class="chip">${esc(a.name)}</span>
+                <span class="chip">Conf: ${Math.round(a.conf*100)}%</span>
+              </div>
+            `).join("")}
+          `:""}
+        ` : `<div class="monoBox">Template recommendation appears after extraction.</div>`}
+      </div>
+    </div>
+
+    <div class="applyBar">
+      <div class="row between">
+        <div>
+          <div style="font-weight:800;">4) Review & Apply</div>
+          <div class="tiny">Applies accepted extracted terms into module tables as Draft with citations.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" id="viewDiffBtn">View Diff</button>
+          <button class="btn" id="applyDraftBtn">Apply to Modules</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <h3>Quick KPIs</h3>
+    <div class="kpis">
+      <div class="kpi"><div class="v">${fmtMM(bb.eligible, bb.ccy)}</div><div class="l">Eligible</div></div>
+      <div class="kpi"><div class="v">${fmtMM(bb.grossAdv, bb.ccy)}</div><div class="l">Gross Advance</div></div>
+      <div class="kpi"><div class="v">-${fmtMM(bb.concCuts, bb.ccy)}</div><div class="l">Conc. Cuts</div></div>
+      <div class="kpi"><div class="v">${fmtMM(bb.net, bb.ccy)}</div><div class="l">Net BB</div></div>
+    </div>
+  `;
+
+  const el = document.getElementById("leftPanel");
+  el.innerHTML = html;
+
+  // Wire buttons
+  document.getElementById("extractBtn").onclick = ()=>{
+    const txt = document.getElementById("agreementText").value || "";
+    d.agreementText = txt;
+    const { extracted, recommendation } = extractTermsFromAgreement(txt);
+    d.extraction = extracted;
+    d.templateRecommendation = recommendation;
+    toast("Terms extracted (mock)");
+    render();
+  };
+
+  document.getElementById("loadSampleBtn").onclick = ()=>{
+    const sample =
+`Borrowing Base and Eligibility (excerpt)
+Eligible Loans: Obligors organized in the United States or Canada. No Sanctioned Person. Minimum rating B-.
+Lien: first or second priority perfected lien.
+
+Advance Rates (Schedule 1)
+First lien: 70%. Second lien: 55%. Oil & Gas: 55% and aggregate cap of $10MM.
+
+Concentration Limits
+Obligor concentration: max 20% of Advanced Amount. Industry concentration: max 25% of Advanced Amount.
+Rating concentration: loans <=B not to exceed 30% of Eligible Balance.
+
+Reserves
+Agent may establish reserves, including fees and discretionary reserves.`;
+    document.getElementById("agreementText").value = sample;
+    d.agreementText = sample;
+    toast("Loaded sample text");
+  };
+
+  document.getElementById("clearAgreementBtn").onclick = ()=>{
+    document.getElementById("agreementText").value = "";
+    d.agreementText = "";
+    d.extraction = null;
+    d.templateRecommendation = null;
+    toast("Cleared");
+    render();
+  };
+
+  const acceptTemplateBtn = document.getElementById("acceptTemplateBtn");
+  if(acceptTemplateBtn){
+    acceptTemplateBtn.onclick = ()=>{
+      const sel = document.getElementById("templatePick").value;
+      // set as chosen recommendation (mock)
+      const chosen = d.templates.find(x=>x.id===sel);
+      d.templateRecommendation.templateId = sel;
+      d.templateRecommendation.name = chosen?.name || d.templateRecommendation.name;
+      toast("Template selection set");
+      render();
+    };
+  }
+
+  document.getElementById("viewDiffBtn").onclick = ()=> showDiffPreview();
+  document.getElementById("applyDraftBtn").onclick = ()=> applyToModules("draft");
+}
+
+function renderExtractedTerms(ex){
+  const block = (title, arr)=>`
+    <div class="divider"></div>
+    <div style="font-weight:800;">${esc(title)}</div>
+    <table style="margin-top:8px;">
+      <thead><tr><th>Term</th><th>Value</th><th>Conf</th><th>Clause</th><th>Use</th></tr></thead>
+      <tbody>
+        ${arr.map((t, idx)=>`
+          <tr>
+            <td>${esc(t.label)}</td>
+            <td><b>${esc(t.value)}</b></td>
+            <td>${Math.round(t.conf*100)}%</td>
+            <td><button class="linkBtn" data-quote="${esc(t.clause)}">${esc(t.clause)}</button></td>
+            <td>
+              <input type="checkbox" data-accept="1" data-group="${esc(title)}" data-idx="${idx}" ${t.accepted ? "checked":""}/>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  const html = `
+    <div class="row between">
+      <div>
+        <span class="chip">BB Type: ${esc(ex.bbType.value)}</span>
+        <span class="chip">Confidence: ${Math.round(ex.bbType.conf*100)}%</span>
+      </div>
+      <div class="row">
+        <button class="btn secondary" id="acceptAllBtn">Accept all</button>
+        <button class="btn secondary" id="rejectAllBtn">Reject all</button>
+      </div>
+    </div>
+    ${block("Eligibility Terms", ex.eligibility)}
+    ${block("Advance Rate Terms", ex.advanceRates)}
+    ${block("Concentration Terms", ex.concentrations)}
+    ${block("Reserves", ex.reserves)}
+    <div class="divider"></div>
+    <div class="tiny">All extracted terms include confidence + clause citations. You control what gets applied into the rule tables.</div>
+  `;
+
+  // Wire citations + accept toggles after insertion (in renderLeft)
+  setTimeout(()=>{
+    document.querySelectorAll("[data-quote]").forEach(b=>{
+      b.onclick = ()=> openQuote(b.getAttribute("data-quote"));
+    });
+
+    document.querySelectorAll('[data-accept="1"]').forEach(cb=>{
+      cb.onchange = ()=>{
+        const d = getDeal();
+        const group = cb.getAttribute("data-group");
+        const idx = parseInt(cb.getAttribute("data-idx"),10);
+        const checked = cb.checked;
+
+        if(!d.extraction) return;
+        if(group==="Eligibility Terms") d.extraction.eligibility[idx].accepted = checked;
+        if(group==="Advance Rate Terms") d.extraction.advanceRates[idx].accepted = checked;
+        if(group==="Concentration Terms") d.extraction.concentrations[idx].accepted = checked;
+        if(group==="Reserves") d.extraction.reserves[idx].accepted = checked;
+      };
+    });
+
+    const aAll = document.getElementById("acceptAllBtn");
+    const rAll = document.getElementById("rejectAllBtn");
+    if(aAll) aAll.onclick = ()=>{ toggleAllExtracted(true); render(); toast("Accepted all"); };
+    if(rAll) rAll.onclick = ()=>{ toggleAllExtracted(false); render(); toast("Rejected all"); };
+
+  }, 0);
+
+  return html;
+}
+
+function toggleAllExtracted(v){
+  const d = getDeal();
+  if(!d.extraction) return;
+  d.extraction.eligibility.forEach(x=>x.accepted=v);
+  d.extraction.advanceRates.forEach(x=>x.accepted=v);
+  d.extraction.concentrations.forEach(x=>x.accepted=v);
+  d.extraction.reserves.forEach(x=>x.accepted=v);
+}
+
+/* -----------------------------
+   Quote modal
+------------------------------ */
+function openQuote(clause){
+  const d = getDeal();
+  document.getElementById("quoteTitle").textContent = `Citation: ${clause}`;
+  document.getElementById("quoteMeta").textContent = "Excerpt from credit agreement (mock)";
+  document.getElementById("quoteText").textContent = d.quotes[clause] || "No quote found for this clause.";
+  document.getElementById("quoteModal").classList.add("show");
+}
+document.getElementById("closeQuoteBtn").onclick = ()=> document.getElementById("quoteModal").classList.remove("show");
+document.getElementById("quoteModal").onclick = (e)=>{ if(e.target.id==="quoteModal") document.getElementById("quoteModal").classList.remove("show"); };
+
+/* -----------------------------
+   Center panel: Modules
+------------------------------ */
+function renderCenter(){
+  const d = getDeal();
+  const html = `
+    <h2>Modules (Editable)</h2>
+    <div class="subtle">Rules are pre-filled from extracted terms with <span class="tag">Source</span>, <span class="tag">Conf</span>, and <span class="tag">Clause</span>.</div>
+    <div class="divider"></div>
+
+    ${renderEligibilityModule(d)}
+    ${renderAdvanceRatesModule(d)}
+    ${renderConcentrationModule(d)}
+    ${renderReservesModule(d)}
+  `;
+  document.getElementById("centerPanel").innerHTML = html;
+  wireModuleEdits();
+}
+
+function renderEligibilityModule(d){
+  return `
+    <div class="module">
+      <div class="row between">
+        <div>
+          <h3>Eligibility</h3>
+          <div class="small">Domicile / Rating / Lien eligibility rules.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" data-open="bb" data-step="inel">Drill from BB: Ineligibles</button>
+          <button class="btn secondary" data-open="bb" data-step="eligible">Drill from BB: Eligible</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      ${d.eligibilityRules.length ? `
+        <table>
+          <thead><tr><th>Category</th><th>Field</th><th>Op</th><th>Value</th><th>Action</th><th>Tag</th><th>Priority</th><th>Src</th><th>Conf</th><th>Clause</th><th></th></tr></thead>
+          <tbody>
+            ${d.eligibilityRules.map(r=>`
+              <tr>
+                <td>${esc(r.category)}</td>
+                <td>${esc(r.field)}</td>
+                <td>${esc(r.op)}</td>
+                <td>${esc(r.value)}</td>
+                <td>${esc(r.action)}</td>
+                <td><span class="tag">${esc(r.tag)}</span></td>
+                <td>${esc(r.priority)}</td>
+                <td><span class="tag">${esc(r.source || "Manual")}</span></td>
+                <td>${r.conf != null ? Math.round(r.conf*100)+"%" : "—"}</td>
+                <td>${r.clause ? `<button class="linkBtn" data-quote="${esc(r.clause)}">${esc(r.clause)}</button>` : "—"}</td>
+                <td><button class="linkBtn" data-del="elig" data-id="${esc(r.id)}">Delete</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="monoBox">No eligibility rules yet. Extract terms and “Apply to Modules”.</div>`}
+    </div>
+  `;
+}
+
+function renderAdvanceRatesModule(d){
+  return `
+    <div class="module">
+      <div class="row between">
+        <div>
+          <h3>Advance Rates</h3>
+          <div class="small">Advance % rules by lien/rating/industry.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" data-open="bb" data-step="gross">Drill from BB: Gross Advance</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      ${d.advanceRateRules.length ? `
+        <table>
+          <thead><tr><th>Segment Type</th><th>Segment Key</th><th>Condition</th><th>AR%</th><th>Cap</th><th>Tag</th><th>Src</th><th>Conf</th><th>Clause</th><th></th></tr></thead>
+          <tbody>
+            ${d.advanceRateRules.map(r=>`
+              <tr>
+                <td>${esc(r.segmentType)}</td>
+                <td><b>${esc(r.segmentKey)}</b></td>
+                <td>${esc(r.condition)}</td>
+                <td>${esc(r.arPct)}%</td>
+                <td>${esc(r.capType)} ${esc(r.capValue || "")}</td>
+                <td><span class="tag">AR</span></td>
+                <td><span class="tag">${esc(r.source || "Manual")}</span></td>
+                <td>${r.conf != null ? Math.round(r.conf*100)+"%" : "—"}</td>
+                <td>${r.clause ? `<button class="linkBtn" data-quote="${esc(r.clause)}">${esc(r.clause)}</button>` : "—"}</td>
+                <td><button class="linkBtn" data-del="ar" data-id="${esc(r.id)}">Delete</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="monoBox">No advance rate rules yet. Extract terms and “Apply to Modules”.</div>`}
+    </div>
+  `;
+}
+
+function renderConcentrationModule(d){
+  return `
+    <div class="module">
+      <div class="row between">
+        <div>
+          <h3>Concentration</h3>
+          <div class="small">Industry / obligor / rating concentration rules.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" data-open="bb" data-step="conc">Drill from BB: Concentration Cuts</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      ${d.concentrationRules.length ? `
+        <table>
+          <thead><tr><th>Type</th><th>Group By</th><th>Limit</th><th>Applies To</th><th>Method</th><th>Tag</th><th>Src</th><th>Conf</th><th>Clause</th><th></th></tr></thead>
+          <tbody>
+            ${d.concentrationRules.map(r=>`
+              <tr>
+                <td>${esc(r.type)}</td>
+                <td>${esc(r.groupBy)}</td>
+                <td><b>${esc(r.limitValue)}</b> <span class="tiny">${esc(r.limitType)}</span></td>
+                <td>${esc(r.appliesTo)}</td>
+                <td>${esc(r.method)}</td>
+                <td><span class="tag">${esc(r.tag)}</span></td>
+                <td><span class="tag">${esc(r.source || "Manual")}</span></td>
+                <td>${r.conf != null ? Math.round(r.conf*100)+"%" : "—"}</td>
+                <td>${r.clause ? `<button class="linkBtn" data-quote="${esc(r.clause)}">${esc(r.clause)}</button>` : "—"}</td>
+                <td><button class="linkBtn" data-del="conc" data-id="${esc(r.id)}">Delete</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="monoBox">No concentration rules yet. Extract terms and “Apply to Modules”.</div>`}
+    </div>
+  `;
+}
+
+function renderReservesModule(d){
+  return `
+    <div class="module">
+      <div class="row between">
+        <div>
+          <h3>Reserves</h3>
+          <div class="small">Reserves applied after concentration cuts (governed).</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" data-open="bb" data-step="res">Drill from BB: Reserves</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      ${d.reserves.length ? `
+        <table>
+          <thead><tr><th>Type</th><th>Amount</th><th>Basis</th><th>Approval</th><th>Src</th><th>Conf</th><th>Clause</th><th></th></tr></thead>
+          <tbody>
+            ${d.reserves.map(r=>`
+              <tr>
+                <td><b>${esc(r.type)}</b></td>
+                <td>${esc(r.amountMM)}MM</td>
+                <td>${esc(r.basis)}</td>
+                <td>${r.approval==="Pending" ? `<span class="chip warn">Pending</span>` : `<span class="chip good">Approved</span>`}</td>
+                <td><span class="tag">${esc(r.source || "Manual")}</span></td>
+                <td>${r.conf != null ? Math.round(r.conf*100)+"%" : "—"}</td>
+                <td>${r.clause ? `<button class="linkBtn" data-quote="${esc(r.clause)}">${esc(r.clause)}</button>` : "—"}</td>
+                <td><button class="linkBtn" data-del="res" data-id="${esc(r.id)}">Delete</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="monoBox">No reserves yet. Apply extracted reserve terms or add manually.</div>`}
+    </div>
+  `;
+}
+
+function wireModuleEdits(){
+  // citations in module tables
+  document.querySelectorAll("[data-quote]").forEach(b=>{
+    b.onclick = ()=> openQuote(b.getAttribute("data-quote"));
+  });
+
+  // delete rows
+  document.querySelectorAll("[data-del]").forEach(b=>{
+    b.onclick = ()=>{
+      const d = getDeal();
+      const kind = b.getAttribute("data-del");
+      const id = b.getAttribute("data-id");
+      const map = { elig:"eligibilityRules", ar:"advanceRateRules", conc:"concentrationRules", res:"reserves" };
+      const arr = d[map[kind]];
+      const idx = arr.findIndex(x=>x.id===id);
+      if(idx>=0){ arr.splice(idx,1); toast("Deleted row"); render(); }
+    };
+  });
+
+  // drill to BB steps
+  document.querySelectorAll('[data-open="bb"]').forEach(btn=>{
+    btn.onclick = ()=> openBBStep(btn.getAttribute("data-step"));
+  });
+}
+
+/* -----------------------------
+   Right panel: BB report + drill stack
+------------------------------ */
+function renderRight(){
+  const d = getDeal();
+  const bb = computeBB();
+
+  const coverage = computeCoverage();
+
+  const header = `
+    <div class="drillHeader">
+      <div class="row between">
+        <div>
+          <div style="font-weight:800;">Borrowing Base Certificate (BB-first)</div>
+          <div class="tiny">Start here. Every number drills down into modules + clause citations.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" id="backBtn">Back</button>
+          <button class="btn secondary" id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+
+      <div class="row">
+        <span class="chip">${coverage.okCount}/${coverage.totalNeeded} terms mapped</span>
+        ${coverage.missing.length ? `<span class="chip warn">⚠ ${coverage.missing.length} missing</span>` : `<span class="chip good">✅ Complete</span>`}
+        <button class="linkBtn" id="jumpMissingBtn">Jump to missing</button>
+      </div>
+
+      ${coverage.missing.length ? `
+        <div class="divider"></div>
+        ${coverage.missing.slice(0,3).map(m=>`<div class="chip warn" style="display:block; margin-bottom:6px;">⚠ ${esc(m)}</div>`).join("")}
+      `:""}
+
+      <div class="divider"></div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="v">${fmtMM(bb.total, bb.ccy)}</div><div class="l">Total Pool</div></div>
+        <div class="kpi"><div class="v">-${fmtMM(bb.inel, bb.ccy)}</div><div class="l">Ineligible</div></div>
+        <div class="kpi"><div class="v">${fmtMM(bb.eligible, bb.ccy)}</div><div class="l">Eligible</div></div>
+        <div class="kpi"><div class="v">${fmtMM(bb.grossAdv, bb.ccy)}</div><div class="l">Gross Advance</div></div>
+        <div class="kpi"><div class="v">-${fmtMM(bb.concCuts, bb.ccy)}</div><div class="l">Conc. Cuts</div></div>
+        <div class="kpi"><div class="v">-${fmtMM(bb.reserves, bb.ccy)}</div><div class="l">Reserves</div></div>
+        <div class="kpi" style="grid-column: 1 / span 2;">
+          <div class="v">${fmtMM(bb.net, bb.ccy)}</div>
+          <div class="l">NET Borrowing Base Availability</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const waterfall = `
+    <div class="panel">
+      <div class="row between">
+        <div>
+          <div style="font-weight:800;">Waterfall (drillable)</div>
+          <div class="tiny">Click ↘ Drill to open breakdown and citations.</div>
+        </div>
+        <div class="row">
+          <button class="btn secondary" id="pdfBtn">Generate PDF</button>
+          <button class="btn secondary" id="excelBtn">Export Excel</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <table>
+        <thead><tr><th>Step</th><th>Description</th><th>Amount</th><th>Module</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Total Collateral Balance</td><td>${fmtMM(bb.total, bb.ccy)}</td><td>Input</td>
+              <td><button class="linkBtn" data-drill="total">↘ Drill</button></td></tr>
+          <tr><td>2</td><td>Less: Ineligibles</td><td>-${fmtMM(bb.inel, bb.ccy)}</td><td>Eligibility</td>
+              <td><button class="linkBtn" data-drill="inel">↘ Drill</button></td></tr>
+          <tr><td>3</td><td>Eligible Balance</td><td>${fmtMM(bb.eligible, bb.ccy)}</td><td>Eligibility</td>
+              <td><button class="linkBtn" data-drill="eligible">↘ Drill</button></td></tr>
+          <tr><td>4</td><td>Gross Advance (Eligible × AR)</td><td>${fmtMM(bb.grossAdv, bb.ccy)}</td><td>Advance Rates</td>
+              <td><button class="linkBtn" data-drill="gross">↘ Drill</button></td></tr>
+          <tr><td>5</td><td>Less: Concentration Cuts</td><td>-${fmtMM(bb.concCuts, bb.ccy)}</td><td>Concentration</td>
+              <td><button class="linkBtn" data-drill="conc">↘ Drill</button></td></tr>
+          <tr><td>6</td><td>Less: Reserves</td><td>-${fmtMM(bb.reserves, bb.ccy)}</td><td>Reserves</td>
+              <td><button class="linkBtn" data-drill="res">↘ Drill</button></td></tr>
+          <tr><td>7</td><td><b>NET Borrowing Base Availability</b></td><td><b>${fmtMM(bb.net, bb.ccy)}</b></td><td>Output</td>
+              <td><button class="linkBtn" data-drill="net">↘ Trace</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const stack = `
+    <div class="stack" id="stack">
+      ${waterfall}
+      ${App.state.drillStack.map((x, i)=>`
+        <div class="panel">
+          <div class="row between">
+            <div><b>${esc(x.title)}</b></div>
+            <span class="chip">Layer ${i+1}</span>
+          </div>
+          <div class="divider"></div>
+          ${x.html}
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  document.getElementById("rightPanel").innerHTML = header + stack;
+
+  document.getElementById("backBtn").onclick = ()=>{ App.state.drillStack.pop(); renderRight(true); };
+  document.getElementById("resetBtn").onclick = ()=>{ App.state.drillStack=[]; renderRight(true); };
+  document.getElementById("jumpMissingBtn").onclick = ()=> jumpToMissing(coverage);
+
+  document.getElementById("pdfBtn").onclick = ()=>toast("Generate PDF (mock)");
+  document.getElementById("excelBtn").onclick = ()=>toast("Export Excel (mock)");
+
+  document.querySelectorAll("[data-drill]").forEach(b=>{
+    b.onclick = ()=> openBBStep(b.getAttribute("data-drill"));
+  });
+}
+
+function renderRight(preserve=false){
+  // preserve exists for parity; we rerender anyway
+  renderRight();
+}
+
+function pushDrill(title, html){
+  App.state.drillStack.push({ title, html });
+}
+
+function openBBStep(step){
+  const d = getDeal();
+  const bb = computeBB();
+
+  if(step==="total"){
+    pushDrill("BB → Total Collateral Balance", `
+      <div class="monoBox">In production:
+- raw pool exposures
+- data source snapshot & reconciliations
+- FX and cut-off controls</div>
+      <div class="divider"></div>
+      <span class="chip">Total: ${fmtMM(bb.total, bb.ccy)}</span>
+    `);
+  }
+
+  if(step==="inel"){
+    const rows = d.breakdown.eligibilityIneligiblesByTag;
+    pushDrill("BB → Ineligibles (Eligibility tags)", `
+      <table>
+        <thead><tr><th>Tag</th><th>Category</th><th>Amount</th><th>Count</th><th>Citation</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td><span class="tag">${esc(r.tag)}</span></td>
+              <td>${esc(r.category)}</td>
+              <td>${fmtMM(r.amountMM, bb.ccy)}</td>
+              <td>${esc(r.count)}</td>
+              <td>${r.tag==="INEL_SANCT" ? `<button class="linkBtn" data-quote="§2.1(f)">§2.1(f)</button>` : "—"}</td>
+              <td><button class="linkBtn" data-tag="${esc(r.tag)}">↘ Drill</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="row">
+        <button class="btn secondary" data-quote="§2.1(a)">View domicile clause</button>
+        <button class="btn secondary" data-quote="§2.1(c)">View rating clause</button>
+        <button class="btn secondary" data-quote="§2.1(d)">View lien clause</button>
+      </div>
+    `);
+
+    setTimeout(()=>{
+      document.querySelectorAll("[data-tag]").forEach(b=>{
+        b.onclick = ()=> openEligibilityTag(b.getAttribute("data-tag"));
+      });
+      document.querySelectorAll("[data-quote]").forEach(b=>{
+        b.onclick = ()=> openQuote(b.getAttribute("data-quote"));
+      });
+      render();
+    }, 0);
+  }
+
+  if(step==="eligible"){
+    pushDrill("BB → Eligible Pool Snapshot", `
+      <div class="monoBox">Eligible = Total - Ineligible
+Total: ${bb.total.toFixed(1)}MM
+Ineligible: ${bb.inel.toFixed(1)}MM
+Eligible: ${bb.eligible.toFixed(1)}MM
+
+Drill normally shows:
+- eligible exposures
+- cleared tags per exposure
+- overrides applied</div>
+    `);
+  }
+
+  if(step==="gross"){
+    pushDrill("BB → Gross Advance Attribution (by segment)", `
+      <table>
+        <thead><tr><th>Segment Type</th><th>Segment</th><th>Eligible</th><th>AR%</th><th>Advanced</th><th>Citation</th></tr></thead>
+        <tbody>
+          ${d.breakdown.advanceAttribution.map(r=>`
+            <tr>
+              <td>${esc(r.segmentType)}</td>
+              <td><b>${esc(r.segmentKey)}</b></td>
+              <td>${fmtMM(r.eligibleMM, bb.ccy)}</td>
+              <td>${esc(r.arPct)}%</td>
+              <td>${fmtMM(r.advancedMM, bb.ccy)}</td>
+              <td><button class="linkBtn" data-quote="Schedule 1">Schedule 1</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <button class="btn secondary" data-quote="Schedule 1">Open advance rate schedule</button>
+    `);
+
+    setTimeout(()=>{
+      document.querySelectorAll("[data-quote]").forEach(b=> b.onclick=()=>openQuote(b.getAttribute("data-quote")));
+    }, 0);
+  }
+
+  if(step==="conc"){
+    pushDrill("BB → Concentration Cuts (by rule)", `
+      <table>
+        <thead><tr><th>Tag</th><th>Type</th><th>Cut</th><th>Breaches</th><th>Citation</th></tr></thead>
+        <tbody>
+          ${d.breakdown.concSummary.map(r=>`
+            <tr>
+              <td><span class="tag">${esc(r.tag)}</span></td>
+              <td>${esc(r.type)}</td>
+              <td>${fmtMM(r.cutMM, bb.ccy)}</td>
+              <td>${esc(r.breaches)}</td>
+              <td>
+                ${
+                  r.tag==="CONC_OBL_20" ? `<button class="linkBtn" data-quote="§2.3(a)">§2.3(a)</button>` :
+                  r.tag==="CONC_IND_25" ? `<button class="linkBtn" data-quote="§2.3(b)">§2.3(b)</button>` :
+                  `<button class="linkBtn" data-quote="§2.3(c)">§2.3(c)</button>`
+                }
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `);
+
+    setTimeout(()=>{
+      document.querySelectorAll("[data-quote]").forEach(b=> b.onclick=()=>openQuote(b.getAttribute("data-quote")));
+    }, 0);
+  }
+
+  if(step==="res"){
+    pushDrill("BB → Reserves", `
+      ${d.reserves.length ? `
+        <table>
+          <thead><tr><th>Type</th><th>Amount</th><th>Approval</th><th>Citation</th></tr></thead>
+          <tbody>
+            ${d.reserves.map(r=>`
+              <tr>
+                <td><b>${esc(r.type)}</b></td>
+                <td>${esc(r.amountMM)}MM</td>
+                <td>${r.approval==="Pending" ? `<span class="chip warn">Pending</span>` : `<span class="chip good">Approved</span>`}</td>
+                <td>${r.clause ? `<button class="linkBtn" data-quote="${esc(r.clause)}">${esc(r.clause)}</button>` : "—"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : `<div class="monoBox">No reserves configured yet.</div>`}
+    `);
+
+    setTimeout(()=>{
+      document.querySelectorAll("[data-quote]").forEach(b=> b.onclick=()=>openQuote(b.getAttribute("data-quote")));
+    }, 0);
+  }
+
+  if(step==="net"){
+    pushDrill("BB → Net BB Trace", `
+      <div class="monoBox">Net BB = Gross Advance - Concentration Cuts - Reserves
+Gross Advance: ${bb.grossAdv.toFixed(1)}MM
+Concentration: -${bb.concCuts.toFixed(1)}MM
+Reserves: -${bb.reserves.toFixed(1)}MM
+Net BB: ${bb.net.toFixed(1)}MM
+
+Audit:
+- Includes clause citations for each applied rule
+- Stores extracted terms + confidence at time of publication</div>
+    `);
+  }
+
+  render();
+}
+
+/* -----------------------------
+   Drill sub: eligibility samples
+------------------------------ */
+function openEligibilityTag(tag){
+  const d = getDeal();
+  const bb = computeBB();
+  const sample = d.breakdown.eligibilitySamples[tag] || [];
+  pushDrill(`Eligibility → Tag: ${tag}`, `
+    ${sample.length ? `
+      <table>
+        <thead><tr><th>Obligor</th><th>Exposure</th><th>Balance</th><th>Country</th><th>Rating</th><th>Lien</th><th>Evidence</th><th>Override</th></tr></thead>
+        <tbody>
+          ${sample.map(x=>`
+            <tr>
+              <td>${esc(x.obligor)}</td>
+              <td><b>${esc(x.exposure)}</b></td>
+              <td>${fmtMM(x.balMM, bb.ccy)}</td>
+              <td>${esc(x.country)}</td>
+              <td>${esc(x.rating)}</td>
+              <td>${esc(x.lien)}</td>
+              <td>${esc(x.evidence)}</td>
+              <td>${esc(x.override)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    ` : `<div class="monoBox">No sample rows for this tag in mock data.</div>`}
+  `);
+}
+
+/* -----------------------------
+   Coverage / missing terms (mock)
+------------------------------ */
+function computeCoverage(){
+  const d = getDeal();
+  // define required “term buckets” for this BB type
+  const totalNeeded = 16;
+
+  const mapped = [];
+  if(d.extraction){
+    // count accepted terms
+    const acceptCount =
+      d.extraction.eligibility.filter(x=>x.accepted).length +
+      d.extraction.advanceRates.filter(x=>x.accepted).length +
+      d.extraction.concentrations.filter(x=>x.accepted).length +
+      d.extraction.reserves.filter(x=>x.accepted).length;
+
+    // normalize to a “needed terms” count
+    const okCount = Math.min(acceptCount + 6, totalNeeded); // mock scaling
+    const missing = [];
+
+    // mock missing if no reserves accepted or no template rec
+    if(!d.extraction.reserves.some(x=>x.accepted)) missing.push("Reserve authority clause not mapped");
+    // add some common missing items
+    missing.push("Definition of Eligible Cash (if used for reserves)");
+    missing.push("Treatment of foreign obligors edge-case (domicile eligibility carveout)");
+
+    return { okCount, totalNeeded, missing };
+  }
+  return { okCount:0, totalNeeded, missing:["No agreement text extracted yet"] };
+}
+
+function jumpToMissing(coverage){
+  toast("Jump to missing terms (mock): review extracted terms & add manual rules.");
+}
+
+/* -----------------------------
+   Diff preview (mock)
+------------------------------ */
+function showDiffPreview(){
+  const d = getDeal();
+  if(!d.extraction){ toast("Nothing to diff (extract first)"); return; }
+  openQuote("Diff Preview");
+  document.getElementById("quoteTitle").textContent = "Review & Apply — Diff (Mock)";
+  document.getElementById("quoteMeta").textContent = "What will change in module tables when you apply extracted terms";
+  document.getElementById("quoteText").textContent =
+`Eligibility: +${d.extraction.eligibility.filter(x=>x.accepted).length} rows
+Advance Rates: +${d.extraction.advanceRates.filter(x=>x.accepted).length} rows
+Concentration: +${d.extraction.concentrations.filter(x=>x.accepted).length} rows
+Reserves: +${d.extraction.reserves.filter(x=>x.accepted).length} rows
+
+All rows will be tagged with:
+- Source = Agreement
+- Confidence
+- Clause reference`;
+}
+
+/* -----------------------------
+   Validation + Export
+------------------------------ */
+function validateAll(){
+  const d = getDeal();
+  const issues = [];
+  if(!d.extraction) issues.push("No extracted terms. Paste agreement sections and extract.");
+  if(d.reserves.some(r=>r.approval==="Pending")) issues.push("Pending reserve approvals affect Net BB.");
+  if(!d.eligibilityRules.length) issues.push("Eligibility rules empty (apply extracted terms or add manually).");
+  if(!d.advanceRateRules.length) issues.push("Advance rate rules empty (apply extracted terms or add manually).");
+  if(!d.concentrationRules.length) issues.push("Concentration rules empty (apply extracted terms or add manually).");
+
+  if(!issues.length) toast("Validation OK (mock)");
+  else toast(`Validation warnings: ${issues.length}`);
+  // show issues in quote modal for quick review
+  openQuote("Validation");
+  document.getElementById("quoteTitle").textContent = "Validation Report (Mock)";
+  document.getElementById("quoteMeta").textContent = "Issues to resolve before publishing";
+  document.getElementById("quoteText").textContent = issues.length ? issues.map(x=>"- "+x).join("\n") : "No issues detected.";
+}
+
+function exportJSON(){
+  const d = getDeal();
+  const blob = new Blob([JSON.stringify(d, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${d.name.replaceAll(" ","_")}_doc_to_bb_mock.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Exported JSON");
+}
+
+/* -----------------------------
+   Render all
+------------------------------ */
+function render(){
+  renderTopbar();
+  renderLeft();
+  renderCenter();
+  renderRight();
+}
+
+/* Boot */
+render();
+</script>
+</body>
+</html>
